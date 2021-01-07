@@ -1,0 +1,14 @@
+type Author {
+    id: ID!
+    username: String!
+    email: String!
+    accountStatus: String!
+}
+
+type Query {
+    author(username: String, email: String): Author
+}
+
+type Mutation {
+    newAuthor(username: String!, email: String!, password: String!): Author
+}

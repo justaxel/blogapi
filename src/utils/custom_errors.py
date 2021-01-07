@@ -23,3 +23,24 @@ class CouldNotLoadFile(BaseError):
 class MaxNumberOfCharactersReached(BaseError):
     pass
 
+
+class TooManyColumnArguments(BaseError):
+    pass
+
+
+class EmptyPasswordNotAllowed(BaseError):
+    pass
+
+
+class NoDataFound(BaseError):
+    pass
+
+
+class SomeDataMightBeEmpty(BaseError):
+    pass
+
+
+class DataValidationError(BaseError):
+    pass
+
+
