@@ -4,13 +4,14 @@ from ..utils.custom_errors import TooManyColumnArguments, DataValidationError
 from sqlalchemy import Table, select, column, and_
 from databases import Database
 
-from ..utils.account import Account
-from ..utils.database import is_data_valid
+from .main import DB
 from .models import tbl_author
 
+from ..utils.account import Account
+from ..utils.database import is_data_valid
 
 
-async def get_one_author(DB: Database, table: Table, cols: list, where_val: dict) -> typing.Optional[typing.Mapping]:
+async def get_one_author(cols: list, where_val: dict, DB: Database = DB, table: Table = tbl_author) -> typing.Optional[typing.Mapping]:
     """
     Function to select one author from the Author relation. It uses cols (a list
     of SQLAlchemy Column type elements) to be able to fetch only the attributes
@@ -33,13 +34,13 @@ async def get_one_author(DB: Database, table: Table, cols: list, where_val: dict
         wh_key = list(where_val.keys())[0]
         wh_val = where_val[wh_key]
         wh_col = column(wh_key)
-        _query = select(cols).where(and_(wh_col == wh_val, table.c.status_account == 'ACTIVE'))
+        _query = select(cols).where(and_(wh_col == wh_val, table.c.account_status == 'ACTIVE'))
         result = await DB.fetch_one(_query)
         return result 
 
 
 
-async def new_author(DB: Database, table: Table, insert_data: dict):
+async def new_author(insert_data: dict, DB: Database = DB, table: Table = tbl_author):
     
     _data = insert_data
     conf_password = 'conf_password'
@@ -56,7 +57,7 @@ async def new_author(DB: Database, table: Table, insert_data: dict):
             ################! set it to not active when ready to validate email 
         # update the status of the account
         status = author.set_status('ACTIVE')
-        stat_data = {'status_account': status}
+        stat_data = {'account_status': status}
         _data.update(stat_data)
 
         insert_q = table.insert().values(_data)
@@ -64,13 +65,7 @@ async def new_author(DB: Database, table: Table, insert_data: dict):
         try:
             await transaction.start()
             result = await DB.execute(insert_q)
-        except Exception as e:
-            #####################################!
-            print()
-            print('The following error was originated in the new_author function:')
-            print(e)
-            print('-------------------')
-            #####################################!
+        except Exception:
             await transaction.rollback()
         else:
             await transaction.commit()

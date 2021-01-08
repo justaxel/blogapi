@@ -9,7 +9,7 @@ import databases
 from os import getenv
 from sqlalchemy import (
     Table, Column, MetaData, text,
-    String, Text,
+    String, Text, DateTime
 )
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -52,8 +52,10 @@ def db_author_model():
     Column('id', UUID, primary_key=True, server_default=text('gen_random_uuid()')),
     Column('username', String(250), nullable=False, unique=True),
     Column('email', Text, nullable=False, unique=True),
-    Column('status_account', Text, nullable=False),
-    Column('password', String(15), nullable=False)
+    Column('account_status', Text, nullable=False),
+    Column('password', String(15), nullable=False),
+    Column('date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
+    Column('date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     )
     return tbl_author
 
@@ -86,12 +88,12 @@ async def test_db_author_query(setup_testDB, db_author_model):
 
     # test if we got the correct result from db
     # query by username
-    author1 = await get_one_author(T_DB, _table, _cols, _where_val)
+    author1 = await get_one_author(_cols, _where_val, T_DB, _table, )
     assert not author1 is None
     assert dict(author1)['username'] == 'edgysquirrel'
     
     # query by email
-    author2 = await get_one_author(T_DB, _table, all_cols, _where_val)
+    author2 = await get_one_author(all_cols, _where_val, T_DB, _table)
     assert not author2 is None
     assert dict(author2)['email'] == 'edgysquirrel@email.com'
 
@@ -99,7 +101,7 @@ async def test_db_author_query(setup_testDB, db_author_model):
     # to pass too many dictionary elements to it.
     many_where_args = {'username': 'edgysquirrel', 'email': 'edgysquirrel@email.com'}
     with pytest.raises(TooManyColumnArguments) as e_info:
-        await get_one_author(T_DB, _table, all_cols, many_where_args)
+        await get_one_author(all_cols, many_where_args, T_DB, _table)
         assert str(e_info.value) == (
             f'Only one column is allowed. You have used 2.'
         )
@@ -108,9 +110,11 @@ async def test_db_author_query(setup_testDB, db_author_model):
     #my_id = uuid.uuid4()
     m_id = 'edb1439e-7301-4627-a630-eeab57dff411'
     not_val = {'id': m_id}
-    not_author = await get_one_author(T_DB, _table, _cols, not_val)
+    not_author = await get_one_author(_cols, not_val, T_DB, _table)
     assert not_author is None
 
+    await T_DB.disconnect()
+    assert not T_DB.is_connected
 
 @pytest.mark.asyncio
 async def test_db_author_insert(setup_testDB, db_author_model):
@@ -132,7 +136,7 @@ async def test_db_author_insert(setup_testDB, db_author_model):
         'conf_password': 'ThisIsMyPassword123)=5$#'
     }
 
-    n_author = await new_author(T_DB, _table, _author)
+    n_author = await new_author(_author, T_DB, _table)
     assert not n_author is None
     # check that the value returned by the new_author function is the id of the author.
     assert type(n_author) == pgUUID
@@ -160,7 +164,7 @@ async def test_db_author_insert(setup_testDB, db_author_model):
     # this should return violation of unique constraint (email)
     # you can play with all 'existing_author...' if you want
     # they all should return the same error.
-    n_author = await new_author(T_DB, _table, existing_author3)
+    n_author = await new_author(existing_author3, T_DB, _table)
     assert n_author is None
 
     # new author has different email, but same username as other author
@@ -171,7 +175,7 @@ async def test_db_author_insert(setup_testDB, db_author_model):
         'conf_password': 'myhackablepassword'
     }
     # this should return violation of unique contraint (username)
-    n_author1 = await new_author(T_DB, _table, author_with_existing_username)
+    n_author1 = await new_author(author_with_existing_username, T_DB, _table)
     assert n_author1 is None
 
     author_with_missing_email = {
@@ -181,7 +185,7 @@ async def test_db_author_insert(setup_testDB, db_author_model):
         'conf_password': 'myhackablepassword2'
     }
     with pytest.raises(DataValidationError):
-        n_author2 = await new_author(T_DB, _table, author_with_missing_email)
+        n_author2 = await new_author(author_with_missing_email, T_DB, _table)
         assert n_author2 is None
 
     author_with_missing_username = {
@@ -191,7 +195,7 @@ async def test_db_author_insert(setup_testDB, db_author_model):
         'conf_password': 'myhackablepassword3'
     }
     with pytest.raises(DataValidationError):
-        n_author3 = await new_author(T_DB, _table, author_with_missing_username)
+        n_author3 = await new_author(author_with_missing_username, T_DB, _table)
         assert n_author3 is None
 
     author_with_missing_pwrds = {
@@ -201,5 +205,9 @@ async def test_db_author_insert(setup_testDB, db_author_model):
         'conf_password': ''
     }
     with pytest.raises(DataValidationError):
-        n_author4 = await new_author(T_DB, _table, author_with_missing_pwrds)
+        n_author4 = await new_author(author_with_missing_pwrds, T_DB, _table)
         assert n_author4 is None
+
+    await T_DB.disconnect()
+    assert not T_DB.is_connected
+    
