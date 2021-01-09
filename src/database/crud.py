@@ -36,8 +36,17 @@ async def get_one_author(cols: list, where_val: dict, DB: Database = DB, table: 
         wh_col = column(wh_key)
         _query = select(cols).where(and_(wh_col == wh_val, table.c.account_status == 'ACTIVE'))
         result = await DB.fetch_one(_query)
-        return result 
+        return result
 
+
+async def get_all_authors(DB: Database = DB, table: Table = tbl_author) -> typing.List[typing.Mapping]:
+    """."""
+
+    cols = [table]
+    _query = select(cols).where(table.c.account_status == 'ACTIVE')
+    result = await DB.fetch_all(_query)
+    return result
+        
 
 
 async def new_author(insert_data: dict, DB: Database = DB, table: Table = tbl_author):

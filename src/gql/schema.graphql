@@ -1,19 +1,22 @@
 type Query {
     author(username: String, email: String): Author
-    user: User
-}
-
-type User {
-    username: String!
+    authors: [Author!]!
 }
 
 type Mutation {
-    newAuthor(username: String!, email: String!, password: String!): Author
+    newAuthor(username: String!, email: String!, password: String!, passwordConfirm: String!): NewAuthorPayload
 }
 
 type Author {
     id: ID!
     username: String!
     email: String!
-    accountStatus: String!
+    account_status: String!
+    date_created: String!
+}
+
+type NewAuthorPayload {
+    status: Boolean!
+    error: String
+    authorId: String
 }

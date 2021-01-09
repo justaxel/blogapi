@@ -2,35 +2,24 @@ from ariadne import (
     load_schema_from_path,
     make_executable_schema,
     QueryType,
-    ObjectType
+    ObjectType,
+    MutationType
 )
 
-#from .resolvers.crud import get_one_author
-from .resolvers.query import resolve_author
+from .resolvers.query import resolve_author, resolve_authors
+from .resolvers.mutation import resolve_new_author
 
 gql_path = 'src/gql/'
 type_defs = load_schema_from_path(f'{gql_path}schema.graphql')
 
 query = QueryType()
 author = ObjectType('Author')
-user = ObjectType('User')
+new_author_payload = ObjectType('NewAuthorPayload')
 
-@query.field('user')
-async def resolve_user(_, info):
-    print('here is the resolve user(form query)')
-    print(info)
-    print('----')
-    print(dict(info.context['request']))
-    return info.context['request']
-
-@user.field('username')
-async def resolve_username(obj, info):
-    print('Here is the resolve usernameinfo:')
-    print(info)
-    print('---')
-    print(dict(obj))
-    return 'hello'
-
+mutation = MutationType()
 
 query.set_field('author', resolve_author)
-schema = make_executable_schema(type_defs, query, author, user)
+query.set_field('authors', resolve_authors)
+
+mutation.set_field('newAuthor', resolve_new_author)
+schema = make_executable_schema(type_defs, query, author, mutation, new_author_payload)
