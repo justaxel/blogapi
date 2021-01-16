@@ -2,8 +2,7 @@ from os import path, getenv
 from pathlib import Path
 from dotenv import load_dotenv
 
-from .utils.database import get_db_data
-
+# this should map to 'api/' directory 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 def _load_dotenv(_path: Path):
@@ -13,10 +12,11 @@ def _load_dotenv(_path: Path):
 
 _load_dotenv(BASE_DIR)
 
-DB_NAME = getenv(get_db_data('DATABASE_NAME'))
-DB_HOST = getenv(get_db_data('DATABASE_HOST'))
-DB_USER = getenv(get_db_data('DATABASE_USER'))
-DB_PWRD = getenv(get_db_data('DATABASE_PWRD'))
+
+DB_NAME = getenv('DATABASE_NAME')
+DB_HOST = getenv('DATABASE_HOST')
+DB_USER = getenv('DATABASE_USER')
+DB_PWRD = getenv('DATABASE_PWRD')
 
 DB_URL = f'postgresql://{DB_USER}:{DB_PWRD}@{DB_HOST}/{DB_NAME}'
 

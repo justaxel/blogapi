@@ -1,15 +1,14 @@
 from sqlalchemy import (
-    Table, Column, MetaData, text,
+    Table, Column, text,
     String, Text, DateTime
 )
 from sqlalchemy.dialects.postgresql import UUID
-from .main import engine
+
+from .main import metadata
 
 
-metadata = MetaData(engine)
-
-tbl_author = Table(
-    'author', metadata,
+tbl_account_author = Table(
+    'account_author', metadata,
     Column('id', UUID, primary_key=True, server_default=text('gen_random_uuid()')),
     Column('username', String(250), nullable=False, unique=True),
     Column('email', Text, nullable=False, unique=True),
@@ -18,3 +17,4 @@ tbl_author = Table(
     Column('date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
 )
+

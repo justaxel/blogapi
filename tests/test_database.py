@@ -1,4 +1,4 @@
-from ..utils.custom_errors import (
+from src.utils.custom_errors import (
     TooManyColumnArguments,
     SomeDataMightBeEmpty,
     DataValidationError
@@ -13,11 +13,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 
-from ..settings import BASE_DIR
-from ..settings import _load_dotenv
-from ..utils.database import get_db_data
+from src.settings import BASE_DIR
+from src.settings import _load_dotenv
+from src.utils.database import get_db_data
 
-from ..database.crud import (
+from src.database.crud import (
     get_one_author, new_author
 )
 ################# BEGINNING OF FIXTURES #################

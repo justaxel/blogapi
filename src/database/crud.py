@@ -1,81 +1,133 @@
 import typing
-from ..utils.custom_errors import TooManyColumnArguments, DataValidationError
-
 from sqlalchemy import Table, select, column, and_
 from databases import Database
+from sqlalchemy.sql.schema import Column
 
 from .main import DB
-from .models import tbl_author
+from .models import tbl_account_author
+from .verification import AccountDataVerification
 
-from ..utils.account import Account
-from ..utils.database import is_data_valid
+from ..utils.custom_errors import (
+    TooManyColumnArguments,
+    DataValidationError,
+    WrongAccountType
+)
 
 
-async def get_one_author(cols: list, where_val: dict, DB: Database = DB, table: Table = tbl_author) -> typing.Optional[typing.Mapping]:
+class AccountDB:
     """
-    Function to select one author from the Author relation. It uses cols (a list
-    of SQLAlchemy Column type elements) to be able to fetch only the attributes
-    in the list. The argument 'where_val' is a dictionary with only one key and
-    value. It will only return authors that have the 'ACTIVE' status.
+    A class to read, create, update, and delete accounts.
+
+    Attributes
+    ----------
+    `account_type` : str
+        The type of the account.
     
-    EXAMPLE:
+    Methods
+    -------
+    `get_table()`:
+        Gets and assings the correct account table for the `account_type` specified.
+        No need to call it, since this function it's called by the class
+        constructor.
 
-    cols = [my_table.c.my_column] or col = [my_table] if all columns are needed.
+    `fetch_one()`:
+        Gets only one account according to the specified table attributes and values.
+    
+    `fetch_all()`:
+        Gets all accounts according to the specified table attributes.
 
-    where_val = {'id': 'my_id'}
+    `create_account()`:
+        Creates a new account.
     """
 
-    keys_no = len(where_val.keys())
-    if keys_no > 1:
-        raise TooManyColumnArguments(
-            f'Only one column is allowed. You have used {keys_no}.'
-        )
-    else:
-        wh_key = list(where_val.keys())[0]
-        wh_val = where_val[wh_key]
-        wh_col = column(wh_key)
-        _query = select(cols).where(and_(wh_col == wh_val, table.c.account_status == 'ACTIVE'))
-        result = await DB.fetch_one(_query)
+    def __init__(self, account_type: str):
+        self.account_type = account_type
+        self.get_table()
+    
+    def get_table(self) -> Table:
+        """
+        Assings the correct SQL Alchemy Table for the specified account type.
+        In case `account_type` is not recognize, it will raise a `WrongAccountType`
+        error. This functions is automatically called in the `AccountDB` constructor,
+        so there is no need to call it separately.
+        """
+
+        ALL_ACCOUNT_TABLES = {
+            'author': tbl_account_author,
+            #'user': tbl_account_user 
+        }
+        try:
+            self.table = ALL_ACCOUNT_TABLES[self.account_type]
+        except KeyError:
+            raise WrongAccountType
+        else:
+            return self.table
+    
+    async def fetch_one(
+        self,
+        cols: typing.Union[typing.List[Column], typing.List[Table]],
+        where_val: typing.Dict[str, str]
+    ) -> typing.Optional[typing.Mapping]:
+        """
+        Function to fetch a single account. It uses `cols` to be able to fetch only
+        the attributes specified in the list or the entire table attributes.
+        The argument `where_val` can only have one key and value.
+        The function will only return active accounts.
+
+        EXAMPLE
+        -------
+        `cols = [my_table.c.my_column]` or `col = [my_table]`
+        if all columns are needed, and
+
+        `where_val = {'id': 'my_id'}`
+        """
+
+        keys_no = len(where_val.keys())
+        if keys_no > 1:
+            raise TooManyColumnArguments(
+                f'Only one column is allowed. You have used {keys_no}.'
+            )
+        else:
+            wh_key = list(where_val.keys())[0]
+            wh_val = where_val[wh_key]
+            wh_col = column(wh_key)
+            _query = select(cols).where(and_(wh_col == wh_val, self.table.c.account_status == 'active'))
+            result = await DB.fetch_one(_query)
+            return result
+
+
+    async def fetch_all(
+        self,
+        cols: typing.Union[typing.List[Column], typing.List[Table]]
+    ) -> typing.List[typing.Mapping]:
+        """
+        Fetch all active accounts. It uses `cols` to be able to fetch only
+        the attributes specified in the list or the entire table attributes.
+
+        EXAMPLE
+        -------
+        `cols = [my_table.c.my_column]` or `col = [my_table]`
+        if all columns are needed.
+        """
+
+    #! Make a limit and offset query. Maybe use cursor for this
+        _query = select(cols).where(self.table.c.account_status == 'active')
+        result = await DB.fetch_all(_query)
         return result
 
 
-async def get_all_authors(DB: Database = DB, table: Table = tbl_author) -> typing.List[typing.Mapping]:
-    """."""
+    async def create_account(self, account_data: dict):
+        """
+        Create an account based on the specified `account_data` dictionary.
 
-    cols = [table]
-    _query = select(cols).where(table.c.account_status == 'ACTIVE')
-    result = await DB.fetch_all(_query)
-    return result
-        
+        IMPORTANT
+        ---------
+        This function does not sanitizes data. All data should be validated
+        before calling `create_account`.
+        """
 
+        _account_data = account_data
 
-async def new_author(insert_data: dict, DB: Database = DB, table: Table = tbl_author):
-    
-    _data = insert_data
-    conf_password = 'conf_password'
-    author = Account()
-
-    try:
-        is_data_valid(_data)
-    except:
-        raise DataValidationError
-    else:
-        _data.pop(conf_password)
-        h_password = author.hash_password(_data['password'])
-        _data['password'] = h_password
-            ################! set it to not active when ready to validate email 
-        # update the status of the account
-        status = author.set_status('ACTIVE')
-        stat_data = {'account_status': status}
-        _data.update(stat_data)
-
-        insert_q = table.insert().values(_data)
-        transaction = DB.transaction()
-        try:
-            await transaction.start()
-            result = await DB.execute(insert_q)
-        except Exception:
-            await transaction.rollback()
-        else:
-            await transaction.commit()
-            return result
+        insert_q = self.table.insert().values(_account_data)
+        result = await DB.execute(insert_q)
+        return result

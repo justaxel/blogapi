@@ -1,47 +1,48 @@
-from ...database.models import tbl_author
-from ...database.crud import get_one_author, get_all_authors
-from ...utils.helper_funcs import to_camel_case
+import typing
+from sqlalchemy import Column
+
+from ...database.models import tbl_account_author
+from ...database.crud import AccountDB
+from ...database.accounts import Author
+from ...utils.helper_funcs import dict_keys_to_camel_case, get_query_fields
 
 
 # resolver function for single author query
-async def resolve_author(info, *_, username: str = None, email: str = None):
-    print(await info.context['request'].json())
+async def resolve_query_get_single_author(_,
+    info,
+    username: str = None,
+    email: str = None,
+) -> typing.Optional[typing.Mapping]:
+
+    request = await info.context['request'].json()
+    gql_request = request['query']
+    # get query fields from the raw graphql request
+    query_fields = get_query_fields(gql_request)
+    
+    _db = AccountDB('author')
+    cols = [Column(field) for field in query_fields]
+
+    where_vals = {}
     if username:
         where_vals = {'username': username}
-        cols = [
-            tbl_author.c.id, tbl_author.c.username, tbl_author.c.email, 
-            tbl_author.c.account_status, tbl_author.c.date_created
-        ]
-        author = await get_one_author(cols, where_vals)
-        if author:
-            _author = dict(author)
-            for key in _author.keys():
-                to_camel_case(key)
-            print(_author)
-            return _author
-        else:
-            return None
-
     elif email:
         where_vals = {'email': email}
-        cols = [
-            tbl_author.c.id, tbl_author.c.username, tbl_author.c.email,
-            tbl_author.c.account_status, tbl_author.c.date_created
-        ]
-        author = await get_one_author(cols, where_vals)
-        if author:
-            _author = dict(author)
-            for key in _author.keys():
-                to_camel_case(key)
-            print(_author)
-            return _author
-        else:
-            return None
+    
+    author = await _db.fetch_one(cols, where_vals)
+    if author:
+        _author = dict_keys_to_camel_case(author)
+        return _author
+    else:
+        return author
 
+async def resolve_query_get_all_authors(_, info, **__):
+    request = await info.context['request'].json()
+    gql_request = request['query']
+    # get query fields from the raw graphql request
+    query_fields = get_query_fields(gql_request, 'authors')
 
-# resolver function for all authors query
-async def resolve_authors(*_, **__):
-    authors = await get_all_authors()
-    _authors = [dict(author) for author in authors]
-    print(_authors)
+    _db = AccountDB('author')
+    cols = [Column(field) for field in query_fields]
+    authors = await _db.fetch_all(cols)
+    _authors = [dict_keys_to_camel_case(dict(author)) for author in authors]
     return _authors

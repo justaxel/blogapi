@@ -44,3 +44,9 @@ class DataValidationError(BaseError):
     pass
 
 
+class WrongAccountType(BaseError):
+    pass
+
+
+class QueryIsNotAString(BaseError):
+    pass

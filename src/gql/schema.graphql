@@ -1,5 +1,9 @@
 type Query {
-    author(username: String, email: String): Author
+    author(
+        "The username used to retrieve the Author information."
+        username: String,
+        "The email used to retrieve the Author information."
+        email: String): Author
     authors: [Author!]!
 }
 
@@ -8,15 +12,19 @@ type Mutation {
 }
 
 type Author {
+
     id: ID!
     username: String!
     email: String!
-    account_status: String!
-    date_created: String!
+    accountStatus: String!
+    dateCreated: String!
 }
 
 type NewAuthorPayload {
+    "The success status of the Author's account creation. Returns `true` if all went well. It returns `false` otherwise."
     status: Boolean!
+    "The error ocurred in case something happens when trying to create a new Author."
     error: String
-    authorId: String
+    "The Author's ID. It's returned if and only if the account was successfully created."
+    authorID: String
 }
