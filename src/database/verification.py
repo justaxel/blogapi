@@ -10,7 +10,7 @@ from ..utils.custom_errors import (
 
 class AccountDataVerification():
     """
-    A data checker for any class`Account` instance.
+    A data checker for any class `Account` instance.
 
     Attributes
     ----------

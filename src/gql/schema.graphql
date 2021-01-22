@@ -1,10 +1,10 @@
 type Query {
-    author(
+    getOneAuthor(
         "The username used to retrieve the Author information."
         username: String,
         "The email used to retrieve the Author information."
         email: String): Author
-    authors: [Author!]!
+    getAllAuthors: [Author!]!
 }
 
 type Mutation {
@@ -27,4 +27,10 @@ type NewAuthorPayload {
     error: String
     "The Author's ID. It's returned if and only if the account was successfully created."
     authorID: String
+}
+
+type NewStoryPayload {
+    status: Boolean!
+    error: String
+    storyID: String
 }

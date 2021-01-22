@@ -1,18 +1,13 @@
 import typing
-from sqlalchemy import Column
+from sqlalchemy import Column, and_
 
 from ...database.models import tbl_account_author
 from ...database.crud import AccountDB
-from ...database.accounts import Author
+from ...classes.accounts import Author
 from ...utils.helper_funcs import dict_keys_to_camel_case, get_query_fields
 
 
-# resolver function for single author query
-async def resolve_query_get_single_author(_,
-    info,
-    username: str = None,
-    email: str = None,
-) -> typing.Optional[typing.Mapping]:
+async def resolve_query_get_single_author(_, info, username: str = None, email: str = None) -> typing.Optional[typing.Mapping]:
 
     request = await info.context['request'].json()
     gql_request = request['query']
@@ -21,14 +16,13 @@ async def resolve_query_get_single_author(_,
     
     _db = AccountDB('author')
     cols = [Column(field) for field in query_fields]
-
-    where_vals = {}
+    table = _db.table
     if username:
-        where_vals = {'username': username}
+        where_clause = and_(table.c.username == username, table.c.account_status == 'active')
     elif email:
-        where_vals = {'email': email}
+        where_clause = and_(table.c.email == email, table.c.account_status == 'active')
     
-    author = await _db.fetch_one(cols, where_vals)
+    author = await _db.fetch_one(cols, where_clause)
     if author:
         _author = dict_keys_to_camel_case(author)
         return _author
@@ -36,13 +30,16 @@ async def resolve_query_get_single_author(_,
         return author
 
 async def resolve_query_get_all_authors(_, info, **__):
+
     request = await info.context['request'].json()
     gql_request = request['query']
     # get query fields from the raw graphql request
-    query_fields = get_query_fields(gql_request, 'authors')
+    query_fields = get_query_fields(gql_request, 'getAllAuthors')
 
     _db = AccountDB('author')
     cols = [Column(field) for field in query_fields]
+    
     authors = await _db.fetch_all(cols)
+    
     _authors = [dict_keys_to_camel_case(dict(author)) for author in authors]
     return _authors

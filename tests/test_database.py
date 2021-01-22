@@ -1,9 +1,3 @@
-from src.utils.custom_errors import (
-    TooManyColumnArguments,
-    SomeDataMightBeEmpty,
-    DataValidationError
-)
-
 import pytest
 import databases
 from os import getenv
@@ -13,25 +7,28 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 
-from src.settings import BASE_DIR
-from src.settings import _load_dotenv
-from src.utils.database import get_db_data
-
-from src.database.crud import (
-    get_one_author, new_author
+from ..src.utils.custom_errors import (
+    TooManyColumnArguments,
+    SomeDataMightBeEmpty,
+    DataValidationError
 )
+from ..src.settings import BASE_DIR
+from ..src.settings import _load_dotenv
+
+from ..src.database.crud import AccountDB
+
+
 ################# BEGINNING OF FIXTURES #################
 
 
 @pytest.fixture
 def get_db_url():
     
-    #print(BASE_DIR)
     _load_dotenv(BASE_DIR)
-    T_DB_NAME = getenv(get_db_data('DATABASE_NAME', is_test=True))
-    T_DB_HOST = getenv(get_db_data('DATABASE_HOST', is_test=True))
-    T_DB_USER = getenv(get_db_data('DATABASE_USER', is_test=True))
-    T_DB_PWRD = getenv(get_db_data('DATABASE_PWRD', is_test=True))
+    T_DB_NAME = getenv('TEST_DATABASE_NAME')
+    T_DB_HOST = getenv('TEST_DATABASE_HOST')
+    T_DB_USER = getenv('TEST_DATABASE_USER')
+    T_DB_PWRD = getenv('TEST_DATABASE_PWRD')
     T_DB_URL = f'postgresql://{T_DB_USER}:{T_DB_PWRD}@{T_DB_HOST}/{T_DB_NAME}'
     #print(T_DB_URL)
     return T_DB_URL

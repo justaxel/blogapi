@@ -1,6 +1,6 @@
 from typing import Dict
 from passlib.hash import argon2
-from .crud import AccountDB
+from ..database.crud import AccountDB
 
 from ..utils.custom_errors import (
     CouldNotHashPassword,
@@ -92,7 +92,6 @@ class Account:
             'password': self.password,
             'account_status': self.status
         }
-
         return account_data
 
 
@@ -101,7 +100,7 @@ class Author(Account):
     A class to represent an Author. It inherits the `Account` class.
     """
 
-    def __init__(self, username, email, password):
+    def __init__(self, username: str, email: str, password: str):
         """
         Constructs all the necessary attributes for the author object.
         Binds the `AccountDB` class into the `_db` attribute.

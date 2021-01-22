@@ -1,15 +1,13 @@
 import typing
 from sqlalchemy import Table, select, column, and_
-from databases import Database
+from sqlalchemy.sql.elements import BooleanClauseList
 from sqlalchemy.sql.schema import Column
 
 from .main import DB
 from .models import tbl_account_author
-from .verification import AccountDataVerification
 
 from ..utils.custom_errors import (
     TooManyColumnArguments,
-    DataValidationError,
     WrongAccountType
 )
 
@@ -63,10 +61,18 @@ class AccountDB:
         else:
             return self.table
     
+    def start_transaction(self):
+
+        return DB.transaction()
+    
+    def execute(self, query, value = None):
+
+        return DB.execute(query, value)
+    
     async def fetch_one(
         self,
         cols: typing.Union[typing.List[Column], typing.List[Table]],
-        where_val: typing.Dict[str, str]
+        where_clause: BooleanClauseList
     ) -> typing.Optional[typing.Mapping]:
         """
         Function to fetch a single account. It uses `cols` to be able to fetch only
@@ -82,18 +88,9 @@ class AccountDB:
         `where_val = {'id': 'my_id'}`
         """
 
-        keys_no = len(where_val.keys())
-        if keys_no > 1:
-            raise TooManyColumnArguments(
-                f'Only one column is allowed. You have used {keys_no}.'
-            )
-        else:
-            wh_key = list(where_val.keys())[0]
-            wh_val = where_val[wh_key]
-            wh_col = column(wh_key)
-            _query = select(cols).where(and_(wh_col == wh_val, self.table.c.account_status == 'active'))
-            result = await DB.fetch_one(_query)
-            return result
+        _query = select(cols).where(where_clause)
+        result = await DB.fetch_one(_query)
+        return result
 
 
     async def fetch_all(
@@ -116,18 +113,17 @@ class AccountDB:
         return result
 
 
-    async def create_account(self, account_data: dict):
+    async def create_account(self, account_data: dict) -> typing.Optional[str]:
         """
         Create an account based on the specified `account_data` dictionary.
 
         IMPORTANT
         ---------
-        This function does not sanitizes data. All data should be validated
+        This function does not sanitize data. All data should be validated
         before calling `create_account`.
         """
 
-        _account_data = account_data
-
-        insert_q = self.table.insert().values(_account_data)
+        insert_q = self.table.insert().values(account_data)
         result = await DB.execute(insert_q)
         return result
+

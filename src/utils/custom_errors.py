@@ -50,3 +50,6 @@ class WrongAccountType(BaseError):
 
 class QueryIsNotAString(BaseError):
     pass
+
+class NoQueryName(BaseError):
+    pass

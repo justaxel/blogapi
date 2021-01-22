@@ -1,7 +1,7 @@
 import typing
 import re
 
-from .custom_errors import QueryIsNotAString
+from .custom_errors import QueryIsNotAString, NoQueryName
 
 
 def to_camel_case(old_string: str) -> str:
@@ -42,6 +42,8 @@ def get_query_fields(query: str, query_name: str = None) -> typing.List[str]:
         
         result = pattern_query_with_args.search(query)
         if result is None:
+            if not query_name:
+                raise NoQueryName('Please provide the name of your query.')
             result = pattern_query_no_args.search(query)
         try:
             result_index = result.span()[0]
