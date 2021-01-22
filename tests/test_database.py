@@ -1,21 +1,18 @@
 import pytest
 import databases
 from os import getenv
-from sqlalchemy import (
-    Table, Column, MetaData, text,
-    String, Text, DateTime
-)
+import sqlalchemy
 from sqlalchemy.dialects.postgresql import UUID
 
-from ..src.utils.custom_errors import (
+from src.utils.custom_errors import (
     TooManyColumnArguments,
     SomeDataMightBeEmpty,
     DataValidationError
 )
-from ..src.settings import BASE_DIR
-from ..src.settings import _load_dotenv
+from src.settings import BASE_DIR
+from src.settings import _load_dotenv
 
-from ..src.database.crud import AccountDB
+from src.database.crud import AccountDB
 
 
 ################# BEGINNING OF FIXTURES #################
@@ -34,177 +31,98 @@ def get_db_url():
     return T_DB_URL
 
 @pytest.fixture
-def setup_testDB(get_db_url):
+def setup_test_database(get_db_url):
 
-    # notice the 'force_rollback=True' argument
-    TEST_DB = databases.Database(get_db_url, force_rollback=True)
+    TEST_DB = databases.Database(get_db_url)
     return TEST_DB
 
 @pytest.fixture
-def db_author_model():
+def get_test_database_metadata(get_db_url):
+    
+    TEST_engine = sqlalchemy.create_engine(get_db_url)
+    TEST_metadata = sqlalchemy.MetaData(TEST_engine)
+    return TEST_metadata
 
-    metadata = MetaData()
-    tbl_author = Table(
-    'author', metadata,
-    Column('id', UUID, primary_key=True, server_default=text('gen_random_uuid()')),
-    Column('username', String(250), nullable=False, unique=True),
-    Column('email', Text, nullable=False, unique=True),
-    Column('account_status', Text, nullable=False),
-    Column('password', String(15), nullable=False),
-    Column('date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
-    Column('date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+@pytest.fixture
+def setup_test_database_account_author_model(get_test_database_metadata):
+
+    metadata = get_test_database_metadata
+    Column = sqlalchemy.Column
+
+    TEST_tbl_account_author = sqlalchemy.Table(
+    'account_author', metadata,
+    Column('id', UUID, primary_key=True, server_default=sqlalchemy.text('gen_random_uuid()')),
+    Column('username', sqlalchemy.String(250), nullable=False, unique=True),
+    Column('email', sqlalchemy.Text, nullable=False, unique=True),
+    Column('account_status', sqlalchemy.Text, nullable=False),
+    Column('password', sqlalchemy.String(15), nullable=False),
+    Column('date_created', sqlalchemy.DateTime(True), nullable=False, server_default=sqlalchemy.text("CURRENT_TIMESTAMP")),
+    Column('date_modified', sqlalchemy.DateTime(True), nullable=False, server_default=sqlalchemy.text("CURRENT_TIMESTAMP"))
     )
-    return tbl_author
+    return TEST_tbl_account_author
+
+@pytest.fixture
+def db_test_account_author_instance(setup_test_database_account_author_model):
+
+    TEST_account_author = AccountDB('author', is_test=True)
+    return TEST_account_author
 
 
 #################### END OF FIXTURES ####################
 
 @pytest.mark.asyncio
-async def test_db_startup(setup_testDB):
+async def test_db_startup(setup_test_database):
 
-    T_DB = setup_testDB
+    T_DB = setup_test_database
     await T_DB.connect()
     assert T_DB.is_connected
     await T_DB.disconnect()
     assert not T_DB.is_connected
 
 @pytest.mark.asyncio
-async def test_db_author_query(setup_testDB, db_author_model):
-    
-    import uuid
+async def test_db_author_query(
+    setup_test_database,
+    setup_test_database_account_author_model,
+    db_test_account_author_instance,
+):
 
-    T_DB = setup_testDB
-    _table = db_author_model
+    from uuid import UUID
+    from sqlalchemy import and_
 
-    await T_DB.connect()
-    assert T_DB.is_connected
-
-    _cols = [_table.c.id, _table.c.username, _table.c.email]
-    all_cols = [_table]
-    _where_val = {'username': 'edgysquirrel'}
-
-    # test if we got the correct result from db
-    # query by username
-    author1 = await get_one_author(_cols, _where_val, T_DB, _table, )
-    assert not author1 is None
-    assert dict(author1)['username'] == 'edgysquirrel'
-    
-    # query by email
-    author2 = await get_one_author(all_cols, _where_val, T_DB, _table)
-    assert not author2 is None
-    assert dict(author2)['email'] == 'edgysquirrel@email.com'
-
-    # test that function raises the correct error message when you try
-    # to pass too many dictionary elements to it.
-    many_where_args = {'username': 'edgysquirrel', 'email': 'edgysquirrel@email.com'}
-    with pytest.raises(TooManyColumnArguments) as e_info:
-        await get_one_author(all_cols, many_where_args, T_DB, _table)
-        assert str(e_info.value) == (
-            f'Only one column is allowed. You have used 2.'
-        )
-    # test that the response is None when not getting any data from db.
-    # you can generate a pseudo-random id for testing by uncommenting the line below
-    #my_id = uuid.uuid4()
-    m_id = 'edb1439e-7301-4627-a630-eeab57dff411'
-    not_val = {'id': m_id}
-    not_author = await get_one_author(_cols, not_val, T_DB, _table)
-    assert not_author is None
-
-    await T_DB.disconnect()
-    assert not T_DB.is_connected
-
-@pytest.mark.asyncio
-async def test_db_author_insert(setup_testDB, db_author_model):
-
-    from asyncpg.pgproto.pgproto import UUID as pgUUID
-
-
-    T_DB = setup_testDB
-    _table = db_author_model
+    T_DB = setup_test_database    
+    T_account_author = db_test_account_author_instance
+    T_account_author.get_database(setup_test_database)
+    T_account_author.table = setup_test_database_account_author_model
 
     await T_DB.connect()
     assert T_DB.is_connected
 
-    # control data with valid values.
-    _author = {
-        'username': 'iamanewauthor',
-        'email': 'iamanewauthor@email.com',
-        'password': 'ThisIsMyPassword123)=5$#',
-        'conf_password': 'ThisIsMyPassword123)=5$#'
-    }
+    T_tbl_account_author = setup_test_database_account_author_model    
+    cols = [T_tbl_account_author]
+    where_clause_by_username = and_(
+        T_tbl_account_author.c.username == 'harrypotter80',
+        T_tbl_account_author.c.account_status == 'active'
+    )
 
-    n_author = await new_author(_author, T_DB, _table)
-    assert not n_author is None
-    # check that the value returned by the new_author function is the id of the author.
-    assert type(n_author) == pgUUID
+    author = await T_account_author.fetch_one(cols, where_clause_by_username)
+    assert author['id'] == UUID('37941b34-9026-4a09-802c-2616210cb1c2')
 
-    # existing authors currently on the test database.
-    existing_author = {
-        'username': 'hermione79',
-        'email': 'hermione79@email.com',
-        'password': "ThisIsMyPassword!$###1231$%/&",
-        'conf_password': "ThisIsMyPassword!$###1231$%/&"
-    }
-    existing_author2 = {
-        'username': 'harrypotter80',
-        'email': 'harrypotter80@email.com',
-        'password': "ThisIsMyPassword!$###1231$%/&",
-        'conf_password': "ThisIsMyPassword!$###1231$%/&"
-    }
-    existing_author3 = {
-        'username': 'RonWeasley80',
-        'email': 'ronweasley80@email.com',
-        'password': "ThisIsMyPassword!$###1231$%/&",
-        'conf_password': "ThisIsMyPassword!$###1231$%/&"
-    }
+    where_clause_by_wrong_username = and_(
+        T_tbl_account_author.c.username == 'NotAUsernameInDB',
+        T_tbl_account_author.c.account_status == 'active'
+    )
+    not_an_author = await T_account_author.fetch_one(cols, where_clause_by_wrong_username)
+    assert not_an_author is None
 
-    # this should return violation of unique constraint (email)
-    # you can play with all 'existing_author...' if you want
-    # they all should return the same error.
-    n_author = await new_author(existing_author3, T_DB, _table)
-    assert n_author is None
-
-    # new author has different email, but same username as other author
-    author_with_existing_username = {
-        'username': 'harrypotter80',
-        'email': 'thisisanewemail@email.com',
-        'password': 'myhackablepassword',
-        'conf_password': 'myhackablepassword'
-    }
-    # this should return violation of unique contraint (username)
-    n_author1 = await new_author(author_with_existing_username, T_DB, _table)
-    assert n_author1 is None
-
-    author_with_missing_email = {
-        'username': 'idonothaveanemail',
-        'email': '',
-        'password': 'myhackablepassword2',
-        'conf_password': 'myhackablepassword2'
-    }
-    with pytest.raises(DataValidationError):
-        n_author2 = await new_author(author_with_missing_email, T_DB, _table)
-        assert n_author2 is None
-
-    author_with_missing_username = {
-        'username': '',
-        'email': 'idonothaveausername',
-        'password': 'myhackablepassword3',
-        'conf_password': 'myhackablepassword3'
-    }
-    with pytest.raises(DataValidationError):
-        n_author3 = await new_author(author_with_missing_username, T_DB, _table)
-        assert n_author3 is None
-
-    author_with_missing_pwrds = {
-        'username': 'avalidusername',
-        'email': 'avalidusername@email.com',
-        'password': '',
-        'conf_password': ''
-    }
-    with pytest.raises(DataValidationError):
-        n_author4 = await new_author(author_with_missing_pwrds, T_DB, _table)
-        assert n_author4 is None
+    with pytest.raises(TypeError) as e_info:
+        await T_account_author.fetch_one(cols)
+    assert str(e_info.value) == "fetch_one() missing 1 required positional argument: 'where_clause'"
 
     await T_DB.disconnect()
     assert not T_DB.is_connected
-    
+
+#@pytest.mark.asyncio
+#async def test_db_author_insert(setup_testDB, db_author_model):
+#
+#    from asyncpg.pgproto.pgproto import UUID as pgUUID
+#

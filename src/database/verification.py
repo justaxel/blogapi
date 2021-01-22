@@ -53,7 +53,7 @@ class AccountDataVerification():
                 data[field]
             except KeyError as err_key:
                 raise NoDataFound(
-                    f" It appears that {err_key} might be missing. "
+                    f"It appears that '{err_key}' might be missing. "
                     "Please check that you have all required data. "
                     f"Here is a hint: {', '.join(REQUIRED_DATA)}"
                 )
@@ -61,7 +61,7 @@ class AccountDataVerification():
                 # if the value for the field is empty raise error
                 if not data[field]:
                     raise SomeDataMightBeEmpty(
-                        f"It appears that \"{field}\" field is empty. "
+                        f"It appears that '{field}' field is empty. "
                         "Please check that all required data has a valid value"
                     )
         # check if username provided is valid

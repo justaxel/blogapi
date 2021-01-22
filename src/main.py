@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from ariadne.asgi import GraphQL
-
 from .gql.type_def import schema
+
 from .settings import DB_NAME
 from .database.main import DB
 

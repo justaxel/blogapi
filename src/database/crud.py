@@ -1,4 +1,5 @@
 import typing
+from databases import Database
 from sqlalchemy import Table, select, column, and_
 from sqlalchemy.sql.elements import BooleanClauseList
 from sqlalchemy.sql.schema import Column
@@ -38,9 +39,21 @@ class AccountDB:
         Creates a new account.
     """
 
-    def __init__(self, account_type: str):
+    def __init__(self, account_type: str, is_test: bool = False):
         self.account_type = account_type
+        self.is_test = is_test
+        self.get_database()
         self.get_table()
+    
+    def get_database(self, database: typing.Optional[Database] = None) -> Database:
+
+        MAIN_DATABASE = DB
+        self.DB = MAIN_DATABASE
+        if self.is_test is True:
+            if database is not None:
+                self.DB = database
+        
+        return self.DB
     
     def get_table(self) -> Table:
         """
@@ -63,11 +76,11 @@ class AccountDB:
     
     def start_transaction(self):
 
-        return DB.transaction()
+        return self.DB.transaction()
     
     def execute(self, query, value = None):
 
-        return DB.execute(query, value)
+        return self.DB.execute(query, value)
     
     async def fetch_one(
         self,
@@ -89,7 +102,7 @@ class AccountDB:
         """
 
         _query = select(cols).where(where_clause)
-        result = await DB.fetch_one(_query)
+        result = await self.DB.fetch_one(_query)
         return result
 
 
@@ -109,7 +122,7 @@ class AccountDB:
 
     #! Make a limit and offset query. Maybe use cursor for this
         _query = select(cols).where(self.table.c.account_status == 'active')
-        result = await DB.fetch_all(_query)
+        result = await self.DB.fetch_all(_query)
         return result
 
 
@@ -124,6 +137,6 @@ class AccountDB:
         """
 
         insert_q = self.table.insert().values(account_data)
-        result = await DB.execute(insert_q)
+        result = await self.DB.execute(insert_q)
         return result
 
