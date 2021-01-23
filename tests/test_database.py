@@ -33,7 +33,7 @@ def get_db_url():
 @pytest.fixture
 def setup_test_database(get_db_url):
 
-    TEST_DB = databases.Database(get_db_url)
+    TEST_DB = databases.Database(get_db_url, force_rollback=True)
     return TEST_DB
 
 @pytest.fixture
@@ -70,6 +70,10 @@ def db_test_account_author_instance(setup_test_database_account_author_model):
 
 #################### END OF FIXTURES ####################
 
+
+################# BEGINNING OF TESTS ####################
+
+
 @pytest.mark.asyncio
 async def test_db_startup(setup_test_database):
 
@@ -79,6 +83,7 @@ async def test_db_startup(setup_test_database):
     await T_DB.disconnect()
     assert not T_DB.is_connected
 
+
 @pytest.mark.asyncio
 async def test_db_author_query(
     setup_test_database,
@@ -86,6 +91,7 @@ async def test_db_author_query(
     db_test_account_author_instance,
 ):
 
+    import datetime
     from uuid import UUID
     from sqlalchemy import and_
 
@@ -97,32 +103,130 @@ async def test_db_author_query(
     await T_DB.connect()
     assert T_DB.is_connected
 
-    T_tbl_account_author = setup_test_database_account_author_model    
-    cols = [T_tbl_account_author]
+    all_cols = [T_account_author.table]
     where_clause_by_username = and_(
-        T_tbl_account_author.c.username == 'harrypotter80',
-        T_tbl_account_author.c.account_status == 'active'
+        T_account_author.table.c.username == 'harrypotter80',
+        T_account_author.table.c.account_status == 'active'
     )
 
-    author = await T_account_author.fetch_one(cols, where_clause_by_username)
-    assert author['id'] == UUID('37941b34-9026-4a09-802c-2616210cb1c2')
+    author1 = await T_account_author.fetch_one(all_cols, where_clause_by_username)
+    assert author1['id'] == UUID('37941b34-9026-4a09-802c-2616210cb1c2')
+    assert author1['username'] == 'harrypotter80'
+    assert author1['email'] == 'harrypotter80@email.com'
+    assert author1['account_status'] == 'active'
+    assert not author1['password'] == 'ItsHarryPotterBitch'
 
+    some_cols = [
+        T_account_author.table.c.id,
+        T_account_author.table.c.username,
+        T_account_author.table.c.email,
+        T_account_author.table.c.date_created
+    ]
+
+    some_cols2 = [
+        sqlalchemy.Column('id'),
+        sqlalchemy.Column('username'),
+        sqlalchemy.Column('email'),
+        sqlalchemy.Column('date_created')
+    ]
+
+    author2 = await T_account_author.fetch_one(some_cols, where_clause_by_username)
+    assert author1['id'] == UUID('37941b34-9026-4a09-802c-2616210cb1c2')
+    assert author2['username'] == 'harrypotter80'
+    assert author2['email'] == 'harrypotter80@email.com'
+    assert author2['date_created'] == datetime.datetime.fromisoformat('2021-01-22 09:21:25.553587+00:00')
+
+    author3 = await T_account_author.fetch_one(some_cols2, where_clause_by_username)
+    assert author3['id'] == UUID('37941b34-9026-4a09-802c-2616210cb1c2')
+    assert author3['username'] == 'harrypotter80'
+    assert author3['email'] == 'harrypotter80@email.com'
+    assert author2['date_created'] == datetime.datetime.fromisoformat('2021-01-22 09:21:25.553587+00:00')
+    
     where_clause_by_wrong_username = and_(
-        T_tbl_account_author.c.username == 'NotAUsernameInDB',
-        T_tbl_account_author.c.account_status == 'active'
+        T_account_author.table.c.username == 'NotAUsernameInDB',
+        T_account_author.table.c.account_status == 'active'
     )
-    not_an_author = await T_account_author.fetch_one(cols, where_clause_by_wrong_username)
+    not_an_author = await T_account_author.fetch_one(all_cols, where_clause_by_wrong_username)
     assert not_an_author is None
+    with pytest.raises(TypeError) as e_info:
+        not_an_author['id']
+    assert str(e_info.value) == "'NoneType' object is not subscriptable"
 
     with pytest.raises(TypeError) as e_info:
-        await T_account_author.fetch_one(cols)
+        await T_account_author.fetch_one(all_cols)
     assert str(e_info.value) == "fetch_one() missing 1 required positional argument: 'where_clause'"
 
     await T_DB.disconnect()
     assert not T_DB.is_connected
 
-#@pytest.mark.asyncio
-#async def test_db_author_insert(setup_testDB, db_author_model):
-#
-#    from asyncpg.pgproto.pgproto import UUID as pgUUID
-#
+
+@pytest.mark.asyncio
+async def test_db_author_insert(
+    setup_test_database,
+    db_test_account_author_instance,
+    setup_test_database_account_author_model
+):
+
+    from asyncpg.pgproto.pgproto import UUID as pgUUID
+    from src.database.verification import AccountDataVerification
+    from src.classes.accounts import Author
+    from sqlalchemy import or_
+
+    T_DB = setup_test_database     
+
+    T_new_author_username = 'iamanewauthor'
+    T_new_author_email = 'iamanewauthor@email.com'
+    T_new_author_password = 'thisismysuperdupersecurepassword123'
+    T_new_author_password_confirm = 'thisismysuperdupersecurepassword123'
+
+    # this is the best case scenario data
+    T_new_author_data = {
+        'username': T_new_author_username,
+        'email': T_new_author_email,
+        'password': T_new_author_password,
+        'password_confirm': T_new_author_password_confirm
+    }
+
+    verify_new_author_data = AccountDataVerification(T_new_author_data)
+    
+    # new_author_data should always be valid.
+    assert verify_new_author_data.is_data_valid() is True
+    
+    T_new_author = Author(T_new_author_username, T_new_author_email, T_new_author_password, is_test=True)
+    T_new_author._db.get_database(setup_test_database)
+    T_new_author._db.table = setup_test_database_account_author_model
+    T_table = T_new_author._db.table
+
+    # build a where clause that will never return an existing author
+    where_clause = or_(
+        T_table.c.username == T_new_author_username,
+        T_table.c.email == T_new_author_email
+    )
+    
+    await T_DB.connect()
+    assert T_DB.is_connected
+    
+    # this should never return any other value than None.
+    not_an_existing_author = await T_new_author._db.fetch_one([T_table.c.id], where_clause)
+    assert not_an_existing_author is None
+
+    T_new_author.set_status('active')
+    assert T_new_author.status == 'active'
+
+    T_new_author.hash_password()
+    assert not T_new_author.password == T_new_author_data['password']
+
+    T_new_author_clean_data = T_new_author.spew_out_data()
+    assert not T_new_author_clean_data == T_new_author_data
+
+    # the following should not raise any exception.
+    # for that reason it is not contained in a try/except/else logic.
+
+    result = await T_new_author._db.create_account(T_new_author_clean_data)
+    assert not result is None
+    # the result from the create_account function should always return an id
+    # of type UUID (or in this case, pgUUID)
+    assert type(result) == pgUUID
+    
+    await T_DB.disconnect()
+    assert not T_DB.is_connected

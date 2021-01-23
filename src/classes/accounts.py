@@ -100,11 +100,11 @@ class Author(Account):
     A class to represent an Author. It inherits the `Account` class.
     """
 
-    def __init__(self, username: str, email: str, password: str):
+    def __init__(self, username: str, email: str, password: str, is_test: bool = False):
         """
         Constructs all the necessary attributes for the author object.
         Binds the `AccountDB` class into the `_db` attribute.
         """
         super().__init__(username, email, password)
         self.account_type = 'author'
-        self._db = AccountDB(self.account_type)
+        self._db = AccountDB(self.account_type, is_test=is_test)

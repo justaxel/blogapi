@@ -21,9 +21,9 @@ async def resolve_new_author(*_, username: str = None, email: str = None, passwo
         author = Author(username, email, password)
         table = author._db.table
         where_clause = or_(table.c.username == username, table.c.email == email)
-        already_author = await author._db.fetch_one([table], where_clause)
+        existing_author = await author._db.fetch_one([table.c.id], where_clause)
 
-        if not already_author:
+        if not existing_author:
             #! Set this to not active when ready to verify email.
             author.set_status('active')
             author.hash_password()
