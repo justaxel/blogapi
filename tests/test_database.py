@@ -1,18 +1,24 @@
+import datetime
 import pytest
 import databases
-from os import getenv
 import sqlalchemy
-from sqlalchemy.dialects.postgresql import UUID
+
+from os import getenv
+from sqlalchemy.dialects.postgresql import UUID as sqlalchemyUUID
+from uuid import UUID
+from asyncpg.pgproto.pgproto import UUID as pgUUID
 
 from src.utils.custom_errors import (
     TooManyColumnArguments,
     SomeDataMightBeEmpty,
     DataValidationError
 )
+
 from src.settings import BASE_DIR
 from src.settings import _load_dotenv
-
 from src.database.crud import AccountDB
+from src.database.verification import AccountDataVerification
+from src.classes.accounts import Author
 
 
 ################# BEGINNING OF FIXTURES #################
@@ -51,7 +57,7 @@ def setup_test_database_account_author_model(get_test_database_metadata):
 
     TEST_tbl_account_author = sqlalchemy.Table(
     'account_author', metadata,
-    Column('id', UUID, primary_key=True, server_default=sqlalchemy.text('gen_random_uuid()')),
+    Column('id', sqlalchemyUUID, primary_key=True, server_default=sqlalchemy.text('gen_random_uuid()')),
     Column('username', sqlalchemy.String(250), nullable=False, unique=True),
     Column('email', sqlalchemy.Text, nullable=False, unique=True),
     Column('account_status', sqlalchemy.Text, nullable=False),
@@ -91,10 +97,6 @@ async def test_db_author_query(
     db_test_account_author_instance,
 ):
 
-    import datetime
-    from uuid import UUID
-    from sqlalchemy import and_
-
     T_DB = setup_test_database    
     T_account_author = db_test_account_author_instance
     T_account_author.get_database(setup_test_database)
@@ -104,7 +106,7 @@ async def test_db_author_query(
     assert T_DB.is_connected
 
     all_cols = [T_account_author.table]
-    where_clause_by_username = and_(
+    where_clause_by_username = sqlalchemy.and_(
         T_account_author.table.c.username == 'harrypotter80',
         T_account_author.table.c.account_status == 'active'
     )
@@ -142,7 +144,7 @@ async def test_db_author_query(
     assert author3['email'] == 'harrypotter80@email.com'
     assert author2['date_created'] == datetime.datetime.fromisoformat('2021-01-22 09:21:25.553587+00:00')
     
-    where_clause_by_wrong_username = and_(
+    where_clause_by_wrong_username = sqlalchemy.and_(
         T_account_author.table.c.username == 'NotAUsernameInDB',
         T_account_author.table.c.account_status == 'active'
     )
@@ -167,10 +169,7 @@ async def test_db_author_insert(
     setup_test_database_account_author_model
 ):
 
-    from asyncpg.pgproto.pgproto import UUID as pgUUID
-    from src.database.verification import AccountDataVerification
-    from src.classes.accounts import Author
-    from sqlalchemy import or_
+    
 
     T_DB = setup_test_database     
 
@@ -198,7 +197,7 @@ async def test_db_author_insert(
     T_table = T_new_author._db.table
 
     # build a where clause that will never return an existing author
-    where_clause = or_(
+    where_clause = sqlalchemy.or_(
         T_table.c.username == T_new_author_username,
         T_table.c.email == T_new_author_email
     )

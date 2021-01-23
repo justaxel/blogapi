@@ -4,7 +4,8 @@ from ..database.crud import AccountDB
 
 from ..utils.custom_errors import (
     CouldNotHashPassword,
-    EmptyPasswordNotAllowed
+    EmptyPasswordNotAllowed,
+    EmptyValue
 )
 
 
@@ -49,6 +50,9 @@ class Account:
 
         STATUS_OPTS = ['active', 'not active', 'deleted']
 
+        if not status:
+            raise EmptyValue
+
         if status in STATUS_OPTS:
             self.status = status
             return self.status
@@ -56,15 +60,12 @@ class Account:
             raise NameError(
                 f'{status} is not a valid status. '
                  "Please use one of the following status options: " 
-                f"'{', '.join(STATUS_OPTS)}'. "
+                f"'{', '.join(STATUS_OPTS)}'."
         )
     
     def hash_password(self) -> str:
         """
-        Hashes the Account's password using the Passlib's implementation of the
-        Argon2(i) hash algorithm.
-        Check 'https://passlib.readthedocs.io/en/stable/lib/passlib.hash.argon2.html#passlib.hash.argon2'
-        for more information.
+        Hashes the Account's password.
         """
 
         password = self.password

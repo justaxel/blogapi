@@ -4,7 +4,8 @@ from passlib.hash import argon2
 from ..utils.custom_errors import (
     MaxNumberOfCharactersReached,
     NoDataFound,
-    SomeDataMightBeEmpty
+    SomeDataMightBeEmpty,
+    PasswordsDoNotMatch
 )
 
 
@@ -53,9 +54,9 @@ class AccountDataVerification():
                 data[field]
             except KeyError as err_key:
                 raise NoDataFound(
-                    f"It appears that '{err_key}' might be missing. "
+                    f"It appears that {err_key} is missing. "
                     "Please check that you have all required data. "
-                    f"Here is a hint: {', '.join(REQUIRED_DATA)}"
+                    f"Here is a hint: {', '.join(REQUIRED_DATA)}."
                 )
             else:
                 # if the value for the field is empty raise error
@@ -70,9 +71,13 @@ class AccountDataVerification():
         except Exception:
             return False
         else:
-            if data[R_DATA_PASSWORD_CONFIRM] != data[R_DATA_PASSWORD]:
+            try:
+                if self.do_passwords_match(data[R_DATA_PASSWORD], data[R_DATA_PASSWORD_CONFIRM]):
+                    return True
+            except PasswordsDoNotMatch:
                 return False
-            return True
+            else:
+                return True
 
     def is_username_valid(self, username: str) -> bool:
         """
@@ -88,7 +93,7 @@ class AccountDataVerification():
         if len_username > MAX_CHARS_NO:
             raise MaxNumberOfCharactersReached(
                 'A username can only be 250 or less characters long. '
-               f"The one provided has '{len_username}' characters."
+               f"The one provided has {len_username} characters."
         )
         elif len_username > 0 and len_username <= MAX_CHARS_NO:
             search_bad_char = re.search(r"\W", username)
@@ -101,7 +106,14 @@ class AccountDataVerification():
                 return True
         else:
             return False
-        
+    
+    def do_passwords_match(self, password1: str, password2: str) -> bool:
+
+        if password1 == password2:
+            return True
+        else:
+            raise PasswordsDoNotMatch('The passwords must match each other.')
+
     def is_hashed_str_valid(self, raw_password: str, hashed_str: str) -> bool:
         """Verifies if a string matches a given hashed string."""
 
