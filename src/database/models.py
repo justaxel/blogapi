@@ -20,15 +20,27 @@ tbl_account_author = Table(
 )
 
 
+tbl_author_profile = Table(
+    'author_profile', metadata,
+    Column('author_id', ForeignKey('account_author.id', ondelete='CASCADE', onupdate='CASCADE')),
+    Column('name_first', String(50)),
+    Column('name_last', String(50)),
+    Column('bio_descript', String(250)),
+    Column('location', String(30))
+)
+
+
 tbl_story = Table(
     'story', metadata,
     Column('id', UUID, primary_key=True, server_default=text("gen_random_uuid()")),
     Column('title', String(286), nullable=False, unique=True),
+    Column('synopsis', Text),
     Column('content', Text),
     Column('date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('is_published', Boolean, nullable=False, server_default=text("false")),
-    Column('language_iso_6392', String(3))
+    Column('language_iso_6392', String(3)),
+    Column('uri', String(2000), nullable=False)
 )
 
 

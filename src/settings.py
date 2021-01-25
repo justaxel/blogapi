@@ -19,4 +19,3 @@ DB_USER = getenv('DATABASE_USER')
 DB_PWRD = getenv('DATABASE_PWRD')
 
 DB_URL = f'postgresql://{DB_USER}:{DB_PWRD}@{DB_HOST}/{DB_NAME}'
-

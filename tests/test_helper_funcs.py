@@ -42,3 +42,4 @@ def test_get_query_fields():
     with pytest.raises(NoQueryName) as e_info:
         get_query_fields(query_no_args)
     assert str(e_info.value) == 'Please provide the name of your query.'
+

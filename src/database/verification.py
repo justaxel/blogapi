@@ -118,3 +118,7 @@ class AccountDataVerification():
         """Verifies if a string matches a given hashed string."""
 
         return argon2.verify(raw_password, hashed_str)
+
+
+class StoryDataVerification():
+    pass

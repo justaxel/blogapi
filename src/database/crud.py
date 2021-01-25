@@ -5,7 +5,10 @@ from sqlalchemy.sql.elements import BooleanClauseList
 from sqlalchemy.sql.schema import Column
 
 from .main import DB
-from .models import tbl_account_author
+from .models import (
+    tbl_account_author,
+    tbl_story
+)
 
 from ..utils.custom_errors import (
     TooManyColumnArguments,
@@ -13,38 +16,12 @@ from ..utils.custom_errors import (
 )
 
 
-class AccountDB:
-    """
-    A class to read, create, update, and delete accounts.
+class MainDB:
 
-    Attributes
-    ----------
-    `account_type` : str
-        The type of the account.
-    
-    Methods
-    -------
-    `get_table()`:
-        Gets and assings the correct account table for the `account_type` specified.
-        No need to call it, since this function it's called by the class
-        constructor.
-
-    `fetch_one()`:
-        Gets only one account according to the specified table attributes and values.
-    
-    `fetch_all()`:
-        Gets all accounts according to the specified table attributes.
-
-    `create_account()`:
-        Creates a new account.
-    """
-
-    def __init__(self, account_type: str, is_test: bool = False):
-        self.account_type = account_type
+    def __init__(self, is_test: bool = False) -> None:
         self.is_test = is_test
         self.get_database()
-        self.get_table()
-    
+
     def get_database(self, database: typing.Optional[Database] = None) -> Database:
 
         MAIN_DATABASE = DB
@@ -55,30 +32,11 @@ class AccountDB:
         
         return self.DB
     
-    def get_table(self) -> Table:
-        """
-        Assings the correct SQL Alchemy Table for the specified account type.
-        In case `account_type` is not recognize, it will raise a `WrongAccountType`
-        error. This functions is automatically called in the `AccountDB` constructor,
-        so there is no need to call it separately.
-        """
-
-        ALL_ACCOUNT_TABLES = {
-            'author': tbl_account_author,
-            #'user': tbl_account_user 
-        }
-        try:
-            self.table = ALL_ACCOUNT_TABLES[self.account_type]
-        except KeyError:
-            raise WrongAccountType
-        else:
-            return self.table
-    
     def start_transaction(self):
 
         return self.DB.transaction()
     
-    def execute(self, query, value = None):
+    def execute(self, query, value=None):
 
         return self.DB.execute(query, value)
     
@@ -105,6 +63,58 @@ class AccountDB:
         result = await self.DB.fetch_one(_query)
         return result
 
+
+class AccountDB(MainDB):
+    """
+    A class to read, create, update, and delete accounts.
+    Inherits :class:`MainDB` 
+
+    Attributes
+    ----------
+    `account_type` : str
+        The type of the account.
+    
+    Methods
+    -------
+    `get_table()`:
+        Gets and assings the correct account table for the `account_type` specified.
+        No need to call it, since this function it's called by the class
+        constructor.
+
+    `fetch_one()`:
+        Gets only one account according to the specified table attributes and values.
+    
+    `fetch_all()`:
+        Gets all accounts according to the specified table attributes.
+
+    `create_account()`:
+        Creates a new account.
+    """
+
+    def __init__(self, account_type: str, is_test: bool = False) -> None:
+        super().__init__(is_test)
+        self.account_type = account_type
+        self.get_table()
+    
+   
+    def get_table(self) -> Table:
+        """
+        Assings the correct SQL Alchemy Table for the specified account type.
+        In case `account_type` is not recognize, it will raise a `WrongAccountType`
+        error. This functions is automatically called in the `AccountDB` constructor,
+        so there is no need to call it separately.
+        """
+
+        ALL_ACCOUNT_TABLES = {
+            'author': tbl_account_author,
+            #'user': tbl_account_user 
+        }
+        try:
+            self.table = ALL_ACCOUNT_TABLES[self.account_type]
+        except KeyError:
+            raise WrongAccountType
+        else:
+            return self.table
 
     async def fetch_all(
         self,
@@ -140,3 +150,16 @@ class AccountDB:
         result = await self.DB.execute(insert_q)
         return result
 
+
+class StoryDB(MainDB):
+    
+    def __init__(self, is_test: bool = False) -> None:
+        super().__init__(is_test)
+    
+    async def create_story(self, story_data: dict) -> typing.Optional[str]:
+        """
+        """
+
+        insert_q = tbl_story.insert().values(story_data)
+        result = await self.DB.execute(insert_q)
+        return result

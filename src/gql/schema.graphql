@@ -18,6 +18,15 @@ type Author {
     email: String!
     accountStatus: String!
     dateCreated: String!
+    #profileInfo: AuthorProfile!
+}
+
+type AuthorProfile {
+    username: String!
+    nameFirst: String
+    nameLast: String
+    bioDescript: String
+    location: String
 }
 
 type NewAuthorPayload {
