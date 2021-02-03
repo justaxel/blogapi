@@ -10,42 +10,42 @@ from .main import metadata
 
 tbl_account_author = Table(
     'account_author', metadata,
-    Column('id', UUID, primary_key=True, server_default=text('gen_random_uuid()')),
-    Column('username', String(250), nullable=False, unique=True),
-    Column('email', Text, nullable=False, unique=True),
-    Column('account_status', Text, nullable=False),
-    Column('password', String(15), nullable=False),
-    Column('date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
-    Column('date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    Column('account_author_id', UUID, primary_key=True, server_default=text('gen_random_uuid()')),
+    Column('account_author_username', String(250), nullable=False, unique=True),
+    Column('account_author_email', Text, nullable=False, unique=True),
+    Column('account_author_status', Text, nullable=False),
+    Column('account_author_password', String(15), nullable=False),
+    Column('account_author_date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
+    Column('account_author_date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
 )
 
 
 tbl_author_profile = Table(
-    'author_profile', metadata,
-    Column('author_id', ForeignKey('account_author.id', ondelete='CASCADE', onupdate='CASCADE')),
-    Column('name_first', String(50)),
-    Column('name_last', String(50)),
-    Column('bio_descript', String(250)),
-    Column('location', String(30))
+    'profile_author', metadata,
+    Column('author_id_fk', ForeignKey('account_author.id', ondelete='CASCADE', onupdate='CASCADE')),
+    Column('author_name_first', String(50)),
+    Column('author_name_last', String(50)),
+    Column('author_bio_descript', String(250)),
+    Column('author_location', String(30))
 )
 
 
 tbl_story = Table(
     'story', metadata,
-    Column('id', UUID, primary_key=True, server_default=text("gen_random_uuid()")),
-    Column('title', String(286), nullable=False, unique=True),
-    Column('synopsis', Text),
-    Column('content', Text),
-    Column('date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
-    Column('date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
-    Column('is_published', Boolean, nullable=False, server_default=text("false")),
-    Column('language_iso_6392', String(3)),
-    Column('uri', String(2000), nullable=False)
+    Column('story_id', UUID, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column('story_title', String(286), nullable=False, unique=True),
+    Column('story_synopsis', Text),
+    Column('story_content', Text),
+    Column('story_date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
+    Column('story_date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
+    Column('story_is_published', Boolean, nullable=False, server_default=text("false")),
+    Column('story_language_iso_6392', String(3)),
+    Column('story_uri', String(2000), nullable=False)
 )
 
 
 tbl_author_story = Table(
     'author_story', metadata,
-    Column('author_id', ForeignKey('account_author.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True, nullable=False),
-    Column('story_id', ForeignKey('story.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True, nullable=False)
+    Column('author_id_fk', ForeignKey('account_author.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True, nullable=False),
+    Column('story_id_fk', ForeignKey('story.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True, nullable=False)
 )

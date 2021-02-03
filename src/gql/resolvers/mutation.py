@@ -2,7 +2,7 @@ from typing import Optional
 from sqlalchemy import or_
 from ...database.main import DB
 
-from ...classes.accounts import Author
+from ...accounts.accounts import Author
 from ...database.crud import AccountDB
 from ...database.verification import AccountDataVerification
 

@@ -1,7 +1,7 @@
 
 
 class AccountProfile:
-    
+
     def __init__(
         self,
         username: str,

@@ -1,10 +1,12 @@
 type Query {
-    getOneAuthor(
+    getAuthor(
         "The username used to retrieve the Author information."
         username: String,
         "The email used to retrieve the Author information."
         email: String): Author
     getAllAuthors: [Author!]!
+    getStory(title: String!): Story
+    getAllStoriesByAuthor(username: String!): [Story!]!
 }
 
 type Mutation {
@@ -12,17 +14,25 @@ type Mutation {
 }
 
 type Author {
-
     id: ID!
     username: String!
     email: String!
-    accountStatus: String!
     dateCreated: String!
-    #profileInfo: AuthorProfile!
+    profileInfo: AuthorProfile!
+    stories: [Story!]!
+}
+
+type Story {
+    id: ID!
+    title: String!
+    content: String
+    synopsis: String
+    language_iso_6392: String!
+    is_published: Boolean!
+    authors: [Author!]!
 }
 
 type AuthorProfile {
-    username: String!
     nameFirst: String
     nameLast: String
     bioDescript: String

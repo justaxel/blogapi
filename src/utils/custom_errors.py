@@ -15,10 +15,6 @@ class AccountAlreadyExists(BaseError):
     pass
 
 
-class CouldNotHashPassword(BaseError):
-    pass
-
-
 class CouldNotLoadFile(BaseError):
     pass
 
@@ -28,6 +24,10 @@ class MaxNumberOfCharactersReached(BaseError):
 
 
 class TooManyColumnArguments(BaseError):
+    pass
+
+
+class TooManyAttributes(BaseError):
     pass
 
 
@@ -48,14 +48,6 @@ class DataValidationError(BaseError):
 
 
 class WrongAccountType(BaseError):
-    pass
-
-
-class QueryIsNotAString(BaseError):
-    pass
-
-
-class NoQueryName(BaseError):
     pass
 
 
