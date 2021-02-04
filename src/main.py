@@ -31,10 +31,6 @@ async def startup():
         print('SUCCESS: Database connected.')
         print(f'You are now connected to {DB_NAME}')
         print(SEPARATOR)
-        # s = StoryDB()
-        # result = await s.fetch_author_stories([tbl_story], {'username': 'harrypotter80'})
-        # _stories = [dict(story) for story in result]
-        # print(_stories)
 
 
 @blogAPI.on_event('shutdown')

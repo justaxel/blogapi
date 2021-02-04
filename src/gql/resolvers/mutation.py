@@ -24,7 +24,7 @@ async def resolve_new_author(*_, username: str = None, email: str = None, passwo
         existing_author = await author._db.fetch_one([table.c.id], where_clause)
 
         if not existing_author:
-            #! Set this to not active when ready to verify email.
+            # ! Set this to not active when ready to verify email.
             author.set_status('active')
             author.hash_password()
             # get new author's data dictionary
@@ -44,46 +44,3 @@ async def resolve_new_author(*_, username: str = None, email: str = None, passwo
         else:
             return {'status': False, 'error': 'An author with those credentials already exist.'}
     return {'status': False, 'error': 'Data is not valid.'}
-
-
-
-#async def resolve_update_author_username(*_, oldUsername = None, newUsername = None, password = None):
-#
-#    dirty_data = {
-#        'old_username': oldUsername,
-#        'new_username': newUsername,
-#        'password': password,
-#    }
-#
-#    verify_data = AccountDataVerification(dirty_data)
-#    if verify_data.is_username_valid(dirty_data['new_username']):
-#        old_username = dirty_data['old_username']
-#        new_username = dirty_data['new_username']
-#        author_password = dirty_data['password']
-#        _db = AccountDB('author')
-#        table = _db.get_table()
-#        update_q = table.update().\
-#                    where(and_(table.c.username == old_username)).\
-#                    values({'username': new_username})
-#        transaction = _db.start_transaction()
-#        try:
-#            await transaction.start()
-#            result = await DB.execute(update_q)
-#            print(result)
-#        except Exception:
-#            await transaction.rollback()
-#        else:
-#            print(result)
-#            if result:
-#                await transaction.commit()
-#                return {'status': True, 'newUsername': result}
-#            else:
-#                return {
-#                    'status': False,
-#                    'error': 'Something.happened.'
-#                }
-#    else:
-#        return {'status': False, 'error': 'The username is not valid. Please check yout input.'}
-#
-#async def resolve_update_author_password(*_, oldPassword = None, newPassword = None):
-#

@@ -206,12 +206,11 @@ class StoryDB(MainDB):
 
         join_q = self.table.\
             join(tbl_author_story, self.table.c.story_id == tbl_author_story.c.story_id_fk).\
-            join(tbl_account_author, and_(tbl_account_author.c.account_author_username == where_clause['username'],
+            join(tbl_account_author, and_(tbl_account_author.c.account_author_id == where_clause['author_id'],
                                           tbl_account_author.c.account_author_status == 'active'
                                           )
                  )
         _query = select(cols).select_from(join_q)
-        print(_query)
         result = await self.DB.fetch_all(_query)
         return result
 

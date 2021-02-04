@@ -173,19 +173,30 @@ def add_table_prefix_to_gql_query_items(
 
     _query = query.copy()
     for query_key, query_val in _query.items():
-        print(query_key)
         table_prefix = query_table_prefix
         if isinstance(query_val, list):
             _query = list(map(lambda field: table_prefix + field, query_val))
-            print(_query)
-    print(_query)
     return _query
 
 
-def remove_table_prefix_from_gql_query_items(
-        query: typing.Dict[str, typing.List[str]],
-        main_query_table_prefix: str,
-        subqueries_table_prefixes: typing.Optional[typing.Dict[str, str]] = None
-) -> typing.Dict[str, typing.List[str]]:
-    """Removes the table name prefixes from a GraphQL query fields."""
-    pass
+def remove_prefix_from_single_db_data(
+        data: typing.Mapping,
+        prefix: str
+) -> dict:
+    """ . """
+
+    data = {key.replace(prefix, ''): value for key, value in data.items()}
+    return data
+
+
+def remove_prefix_from_multiple_db_data(
+        data: typing.Optional[list],
+        prefix: str
+) -> typing.List[dict]:
+    """."""
+
+    _data = [dict(data_item) for data_item in data]
+    _data = [remove_prefix_from_single_db_data(item, prefix) for item in _data]
+    return _data
+
+

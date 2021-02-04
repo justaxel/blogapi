@@ -24,12 +24,6 @@ def to_snake_case(old_string: str) -> str:
         return old_string
 
 
-def remove_table_prefix_from_dict(old_dict: dict, tbl_prefix: str) -> dict:
-    
-    new_dict = {key.replace(tbl_prefix, ''): value for key, value in old_dict.items()}
-    return new_dict
-
-
 def dict_keys_to_camel_case(old_dict: dict) -> dict:
     """Turns every dictionary key into camel case."""
 

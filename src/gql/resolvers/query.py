@@ -1,12 +1,19 @@
 import typing
+import uuid
 import sqlalchemy
 from ariadne import QueryType
-from ...database.crud import AccountDB
+
+from ...database.crud import AccountDB, StoryDB
 from .query_helpers import (
-    get_gql_query,
+    get_graphql_query_attribs,
     add_table_prefix_to_gql_query_items
 )
-from .utils import remove_table_prefix_from_dict, dict_keys_to_camel_case
+from .utils import dict_keys_to_camel_case
+from .query_helpers import (
+    remove_prefix_from_single_db_data,
+    remove_prefix_from_multiple_db_data
+)
+
 
 query = QueryType()
 
@@ -15,15 +22,14 @@ query = QueryType()
 async def resolve_get_author(
         _,
         info,
-        username: typing.Optional[str] = None,
-        email: typing.Optional[str] = None
-) -> typing.Optional[typing.Mapping[str, str]]:
+        username: str = None,
+        email: str = None
+) -> typing.Optional[typing.Mapping]:
 
     # get query fields from the raw graphql request and curate it
     request = await info.context['request'].json()
     gql_request = request['query']
-    print(request)
-    query_fields = get_gql_query(gql_request, has_args=True)
+    query_fields = get_graphql_query_attribs(gql_request, has_args=True)
 
     _db = AccountDB('author')
     # get main query db table prefix and add it to every main query field requested
@@ -42,6 +48,38 @@ async def resolve_get_author(
 
     author = await _db.fetch_one(cols, where_clause)
     if author:
-        _author = remove_table_prefix_from_dict(author, tbl_prefix)
+        _author = remove_prefix_from_single_db_data(author, tbl_prefix)
         author = dict_keys_to_camel_case(_author)
     return author
+
+
+@query.field('getStory')
+async def resolve_get_story(
+        _,
+        info,
+        _id: uuid.UUID = None,
+        title: str = None
+) -> typing.Optional[typing.Mapping]:
+
+    # get query fields from the raw graphql request and curate it
+    request = await info.context['request'].json()
+    gql_request = request['query']
+    print(gql_request)
+    query_fields = get_graphql_query_attribs(gql_request, has_args=True)
+    print(query_fields)
+    _db = StoryDB()
+    tbl_prefix = _db.attribute_prefix
+    q_fields_with_prefix = add_table_prefix_to_gql_query_items(query_fields, tbl_prefix)
+    cols = [sqlalchemy.Column(field) for field in q_fields_with_prefix]
+    if _id:
+        where_clause = _db.table.c.id == _id
+    elif title:
+        where_clause = _db.table.c.title == title
+
+    story = await _db.fetch_one(cols, where_clause)
+    _story = remove_prefix_from_single_db_data(story, tbl_prefix)
+    story = dict_keys_to_camel_case(_story)
+    print(story)
+    return story
+
+

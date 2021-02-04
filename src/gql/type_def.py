@@ -7,13 +7,6 @@ from ariadne import (
 
 from .resolvers.author import author
 from .resolvers.query import query
-
-#from .resolvers.query import (
-#    resolve_query_get_single_author,
-#    resolve_query_get_all_authors,
-#    resolve_query_get_story,
-#    resolve_query_get_all_stories_by_author
-#)
 from .resolvers.mutation import (
     resolve_new_author,
 )

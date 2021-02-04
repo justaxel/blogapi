@@ -39,7 +39,7 @@ tbl_story = Table(
     Column('story_date_created', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('story_date_modified', DateTime(True), nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('story_is_published', Boolean, nullable=False, server_default=text("false")),
-    Column('story_language_iso_6392', String(3)),
+    Column('story_language', String(3)),
     Column('story_uri', String(2000), nullable=False)
 )
 

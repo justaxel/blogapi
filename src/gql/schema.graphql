@@ -1,11 +1,7 @@
 type Query {
-    getAuthor(
-        "The username used to retrieve the Author information."
-        username: String,
-        "The email used to retrieve the Author information."
-        email: String): Author
+    getAuthor(username: String, email: String): Author
     getAllAuthors: [Author!]!
-    getStory(title: String!): Story
+    getStory(_id: ID, title: String): Story
     getAllStoriesByAuthor(username: String!): [Story!]!
 }
 
@@ -27,7 +23,7 @@ type Story {
     title: String!
     content: String
     synopsis: String
-    language_iso_6392: String!
+    language: String!
     is_published: Boolean!
     authors: [Author!]!
 }
