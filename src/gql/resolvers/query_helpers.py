@@ -1,7 +1,8 @@
 import typing
 import re
+from graphql.type.definition import GraphQLResolveInfo
 
-from .utils import to_snake_case
+from .utils import to_snake_case, clean_query_attribs
 from .custom_errors import NoQueryNameForGraphQLQueryWithNoArgs, NumberOfQueryAttributesDoNotMatch
 
 
@@ -71,24 +72,25 @@ def get_graphql_query_attribs(
 
 
 def get_main_request_attribs_from_graphql_query(
-        raw_subquery_attributes: tuple,
+        raw_subquery_attributes: typing.Optional[tuple],
         graphql_query: str
 ) -> typing.List[str]:
 
-    raw_subquery_attributes_names = raw_subquery_attributes[0]
-    raw_subquery_attributes_fields = raw_subquery_attributes[1]
-    # remove all nested query requests while keeping the main request.
-    raw_main_graphql_request = graphql_query
-    for subquery_attributes_index in range(len(raw_subquery_attributes_fields)):
-        raw_main_graphql_request = raw_main_graphql_request.replace(
-            raw_subquery_attributes_fields[subquery_attributes_index], ''
-        ).replace(
-            raw_subquery_attributes_names[subquery_attributes_index], ''
-        )
-    # remove any non-valid characters and get all remaining characters into a list.
-    raw_main_graphql_request = re.split(r"[\W]+", raw_main_graphql_request)
-    raw_main_graphql_request = [to_snake_case(attrib) for attrib in raw_main_graphql_request if attrib != '']
-    return raw_main_graphql_request
+    try:
+        raw_subquery_attributes_names = raw_subquery_attributes[0]
+        raw_subquery_attributes_fields = raw_subquery_attributes[1]
+    except TypeError:
+        main_graphql_request = clean_query_attribs(graphql_query)
+    else:  # remove all nested query requests while keeping the main request.
+        for subquery_attributes_index in range(len(raw_subquery_attributes_names)):
+            graphql_query = graphql_query.replace(
+                raw_subquery_attributes_fields[subquery_attributes_index], ''
+            ).replace(
+                raw_subquery_attributes_names[subquery_attributes_index], ''
+            )
+        # remove any non-valid characters and get all remaining characters into a list.
+        main_graphql_request = clean_query_attribs(graphql_query)
+    return main_graphql_request
 
 
 def get_raw_subqueries_from_graphql_query(
@@ -200,3 +202,8 @@ def remove_prefix_from_multiple_db_data(
     return _data
 
 
+async def get_graphql_request(info: GraphQLResolveInfo) -> str:
+
+    raw_entire_request = await info.context['request'].json()
+    graphql_request = raw_entire_request['query']
+    return graphql_request

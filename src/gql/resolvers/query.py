@@ -1,18 +1,16 @@
 import typing
-import uuid
+from uuid import UUID
 import sqlalchemy
 from ariadne import QueryType
 
 from ...database.crud import AccountDB, StoryDB
 from .query_helpers import (
     get_graphql_query_attribs,
-    add_table_prefix_to_gql_query_items
+    add_table_prefix_to_gql_query_items,
+    get_graphql_request,
+    remove_prefix_from_single_db_data,
 )
 from .utils import dict_keys_to_camel_case
-from .query_helpers import (
-    remove_prefix_from_single_db_data,
-    remove_prefix_from_multiple_db_data
-)
 
 
 query = QueryType()
@@ -27,8 +25,7 @@ async def resolve_get_author(
 ) -> typing.Optional[typing.Mapping]:
 
     # get query fields from the raw graphql request and curate it
-    request = await info.context['request'].json()
-    gql_request = request['query']
+    gql_request = await get_graphql_request(info)
     query_fields = get_graphql_query_attribs(gql_request, has_args=True)
 
     _db = AccountDB('author')
@@ -37,6 +34,7 @@ async def resolve_get_author(
     q_fields_with_prefix = add_table_prefix_to_gql_query_items(query_fields, tbl_prefix)
 
     cols = [sqlalchemy.Column(field) for field in q_fields_with_prefix]
+    where_clause = sqlalchemy.and_()
     if username:
         where_clause = sqlalchemy.and_(
             _db.table.c.account_author_username == username, _db.table.c.account_author_status == 'active'
@@ -57,29 +55,26 @@ async def resolve_get_author(
 async def resolve_get_story(
         _,
         info,
-        _id: uuid.UUID = None,
+        _id: UUID = None,
         title: str = None
 ) -> typing.Optional[typing.Mapping]:
 
     # get query fields from the raw graphql request and curate it
     request = await info.context['request'].json()
     gql_request = request['query']
-    print(gql_request)
     query_fields = get_graphql_query_attribs(gql_request, has_args=True)
-    print(query_fields)
     _db = StoryDB()
     tbl_prefix = _db.attribute_prefix
     q_fields_with_prefix = add_table_prefix_to_gql_query_items(query_fields, tbl_prefix)
     cols = [sqlalchemy.Column(field) for field in q_fields_with_prefix]
+
+    where_clause = sqlalchemy.and_()
     if _id:
-        where_clause = _db.table.c.id == _id
+        where_clause = sqlalchemy.and_(_db.table.c.story_id == _id)
     elif title:
-        where_clause = _db.table.c.title == title
+        where_clause = sqlalchemy.and_(_db.table.c.story_title == title)
 
     story = await _db.fetch_one(cols, where_clause)
     _story = remove_prefix_from_single_db_data(story, tbl_prefix)
     story = dict_keys_to_camel_case(_story)
-    print(story)
     return story
-
-

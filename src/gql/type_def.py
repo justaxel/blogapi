@@ -5,11 +5,12 @@ from ariadne import (
     MutationType
 )
 
-from .resolvers.author import author
 from .resolvers.query import query
 from .resolvers.mutation import (
     resolve_new_author,
 )
+from .resolvers.author import author
+from .resolvers.story import story
 
 
 gql_path = 'src/gql/'
@@ -18,7 +19,6 @@ type_defs = load_schema_from_path(f'{gql_path}schema.graphql')
 mutation = MutationType()
 
 
-story = ObjectType('Story')
 author_profile = ObjectType('AuthorProfile')
 
 

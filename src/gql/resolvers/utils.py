@@ -29,3 +29,11 @@ def dict_keys_to_camel_case(old_dict: dict) -> dict:
 
     new_dict = {to_camel_case(key): value for key, value in old_dict.items()}
     return new_dict
+
+
+def clean_query_attribs(query_section: str) -> typing.List[str]:
+    """."""
+
+    query_section = re.split(r"[\W]+", query_section)
+    query_section = [to_snake_case(attrib) for attrib in query_section if attrib != '']
+    return query_section

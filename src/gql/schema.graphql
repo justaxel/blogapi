@@ -1,7 +1,7 @@
 type Query {
     getAuthor(username: String, email: String): Author
     getAllAuthors: [Author!]!
-    getStory(_id: ID, title: String): Story
+    getStory(_id: ID, title: String): Story  # since 'id' is a built-in function in python. '_id' is used.
     getAllStoriesByAuthor(username: String!): [Story!]!
 }
 
@@ -24,7 +24,7 @@ type Story {
     content: String
     synopsis: String
     language: String!
-    is_published: Boolean!
+    isPublished: Boolean!
     authors: [Author!]!
 }
 

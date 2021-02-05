@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 # this should map to 'api/' directory 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 def _load_dotenv(_path: Path):
     dotenv_path = path.join(_path, '.env')
     load_dotenv(dotenv_path)
