@@ -4,9 +4,9 @@ from sqlalchemy.sql.schema import Column
 from .gql.type_def import schema
 
 from .settings import DB_NAME
-from .database.main import DB
+from .database.main import MAIN_DB
 
-from .database.crud import StoryDB
+from .database.crud import AuthorDB
 from .database.models import tbl_story
 
 blogAPI = FastAPI(debug=True)
@@ -22,15 +22,16 @@ async def startup():
     print(SEPARATOR)
     print('STATUS: Connecting to database...')
     try:
-        await DB.connect()
+        await MAIN_DB.connect()
     except Exception:
         print(f'ERROR: Database could not disconnect. {Exception}.')
         print(SEPARATOR)
     else:
-        assert DB.is_connected
+        assert MAIN_DB.is_connected
         print('SUCCESS: Database connected.')
         print(f'You are now connected to {DB_NAME}')
         print(SEPARATOR)
+
 
 
 @blogAPI.on_event('shutdown')
@@ -38,10 +39,10 @@ async def db_shutdown():
     print(SEPARATOR)
     print('STATUS: Disconnecting from database.')
     try:
-        await DB.disconnect()
+        await MAIN_DB.disconnect()
     except Exception:
         print(f'ERROR: Database could not disconnect. {Exception}')
         print(SEPARATOR)
     else:
-        assert not DB.is_connected
+        assert not MAIN_DB.is_connected
         print('SUCCESS: Database disconnected.')

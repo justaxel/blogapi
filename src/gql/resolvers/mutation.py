@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy import or_
-from ...database.main import DB
+from ...database.main import MAIN_DB
 
 from ...accounts.accounts import Author
 from ...database.crud import AccountDB

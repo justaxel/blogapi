@@ -3,7 +3,7 @@ from databases import Database
 from sqlalchemy import Table, select, and_
 from sqlalchemy.sql.elements import BooleanClauseList
 from sqlalchemy.sql.schema import Column
-from .main import DB
+from .main import MAIN_DB
 from .models import (
     tbl_account_author,
     tbl_story,
@@ -12,26 +12,24 @@ from .models import (
 )
 
 from ..utils.custom_errors import (
-    TooManyAttributes,
+    TooManyWhereClauseAttributes,
     WrongAccountType
 )
 
 
 class MainDB:
 
-    def __init__(self, is_test: bool = False) -> None:
+    def __init__(self, is_test: bool = False, database: Database = None) -> None:
         self.is_test = is_test
-        self.get_database()
+        self.DB = self.get_database(database)
 
-    def get_database(self, database: typing.Optional[Database] = None) -> Database:
+    def get_database(self, database: Database = None) -> Database:
 
-        MAIN_DATABASE = DB
-        self.DB = MAIN_DATABASE
-        if self.is_test is True:
-            if database is not None:
-                self.DB = database
-
-        return self.DB
+        if self.is_test and database is not None:
+            db = database
+        else:
+            db = MAIN_DB
+        return db
 
     def start_transaction(self):
 
@@ -92,36 +90,23 @@ class AccountDB(MainDB):
         Creates a new account.
     """
 
-    def __init__(self, account_type: str, is_test: bool = False) -> None:
-        super().__init__(is_test)
-        self.account_type = account_type
-        self.table = self.get_table()
-        self.attribute_prefix = self.get_attrib_prefix()
+    def __init__(self, account_type: str, is_test: bool = False, database: Database = None) -> None:
+        super().__init__(is_test, database)
+        self.table = self.get_table(account_type)
 
-    def get_table(self) -> Table:
-        """
-        Assings the correct SQL Alchemy Table for the specified account type.
-        In case `account_type` is not recognize, it will raise a `WrongAccountType`
-        error. This functions is automatically called in the `AccountDB` constructor,
-        so there is no need to call it separately.
-        """
+    @staticmethod
+    def get_table(account_type):
 
-        ALL_ACCOUNT_TABLES = {
+        ACCOUNT_TABLES = {
             'author': tbl_account_author,
             # 'user': tbl_account_user
         }
         try:
-            _table = ALL_ACCOUNT_TABLES[self.account_type]
+            table = ACCOUNT_TABLES[account_type]
         except KeyError:
-            raise WrongAccountType
+            raise KeyError
         else:
-            return _table
-
-    def get_attrib_prefix(self) -> str:
-        """Gets the database table attributes' prefix."""
-
-        attrib_prefix = self.table.name + '_'
-        return attrib_prefix
+            return table
 
     async def fetch_all(
             self,
@@ -157,16 +142,55 @@ class AccountDB(MainDB):
         return result
 
 
-class AccountProfileInformationDB(MainDB):
+class AuthorDB(AccountDB):
 
     def __init__(self, is_test: bool = False) -> None:
-        super().__init__(is_test)
-        self.table = self.get_table()
-        self.attribute_prefix = self.get_attrib_prefix()
+        super().__init__('author', is_test)
+        self.table = tbl_account_author
+        self.attrib_prefix = self.get_attrib_prefix()
 
-    @staticmethod
-    def get_table() -> Table:
-        return tbl_author_profile
+    def get_attrib_prefix(self) -> str:
+        """
+
+        Returns:
+
+        """
+        attrib_prefix = self.table.name + '_'
+        return attrib_prefix
+
+    async def fetch_story_authors(
+            self,
+            cols: typing.Union[typing.List[Column], typing.List[Table]], where_clause: typing.Dict[str, str]
+    ) -> typing.Optional[typing.List]:
+        """
+
+        Args:
+            cols:
+            where_clause:
+
+        Returns:
+
+        """
+
+        join_q = self.table.\
+            join(tbl_author_story,
+                 self.table.c.account_author_id == tbl_author_story.c.author_id_fk
+                 ).\
+            join(tbl_story,
+                 tbl_story.c.story_id == where_clause['story_id']
+                 )
+        _query = select(cols, distinct=True).select_from(join_q)
+        result = await self.DB.fetch_all(_query)
+
+        return result
+
+
+class AccountProfileInformationDB(MainDB):
+
+    def __init__(self, is_test: bool = False, database: Database = None) -> None:
+        super().__init__(is_test, database)
+        self.table = tbl_author_profile
+        self.attribute_prefix = self.get_attrib_prefix()
 
     @staticmethod
     def get_attrib_prefix() -> str:
@@ -180,12 +204,8 @@ class StoryDB(MainDB):
 
     def __init__(self, is_test: bool = False) -> None:
         super().__init__(is_test)
-        self.table = self.get_table()
+        self.table = tbl_story
         self.attribute_prefix = self.get_attrib_prefix()
-
-    @staticmethod
-    def get_table() -> Table:
-        return tbl_story
 
     def get_attrib_prefix(self) -> str:
         """Gets the database table attributes' prefix."""
@@ -202,13 +222,16 @@ class StoryDB(MainDB):
         """
 
         if len(where_clause.keys()) > 1:
-            raise TooManyAttributes
+            raise TooManyWhereClauseAttributes
 
         join_q = self.table.\
-            join(tbl_author_story, self.table.c.story_id == tbl_author_story.c.story_id_fk).\
-            join(tbl_account_author, and_(tbl_account_author.c.account_author_id == where_clause['author_id'],
-                                          tbl_account_author.c.account_author_status == 'active'
-                                          )
+            join(tbl_author_story,
+                 self.table.c.story_id == tbl_author_story.c.story_id_fk
+                 ).\
+            join(tbl_account_author,
+                 and_(tbl_account_author.c.account_author_id == where_clause['author_id'],
+                      tbl_account_author.c.account_author_status == 'active'
+                      )
                  )
         _query = select(cols).select_from(join_q)
         result = await self.DB.fetch_all(_query)

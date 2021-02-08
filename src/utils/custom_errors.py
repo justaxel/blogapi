@@ -27,7 +27,7 @@ class TooManyColumnArguments(BaseError):
     pass
 
 
-class TooManyAttributes(BaseError):
+class TooManyWhereClauseAttributes(BaseError):
     pass
 
 
