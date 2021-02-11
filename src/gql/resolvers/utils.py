@@ -31,9 +31,15 @@ def dict_keys_to_camel_case(old_dict: dict) -> dict:
     return new_dict
 
 
-def clean_query_attribs(query_section: str) -> typing.List[str]:
-    """."""
+def clean_query_attribs(query_attribs: str) -> typing.List[str]:
+    """
 
-    query_section = re.split(r"[\W]+", query_section)
-    query_section = [to_snake_case(attrib) for attrib in query_section if attrib != '']
-    return query_section
+    Args:
+        query_attribs:
+
+    Returns:
+
+    """
+    clean_attribs = re.split(r"[\W]+", query_attribs)
+    attribs = [to_snake_case(attrib) for attrib in clean_attribs if attrib != '']
+    return attribs

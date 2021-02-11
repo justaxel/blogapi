@@ -8,7 +8,7 @@ class QueryIsNotAString(BaseError):
     pass
 
 
-class NoQueryNameForGraphQLQueryWithNoArgs(BaseError):
+class NoRootQueryNameForGraphQLQueryWithNoArgs(BaseError):
     """
     Raised when :function:`get_gql_queries(query, has_args=False,
     query_name=None)` keyword argument `has_args` has been set to

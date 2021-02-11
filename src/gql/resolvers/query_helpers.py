@@ -3,7 +3,7 @@ import re
 from graphql.type.definition import GraphQLResolveInfo
 
 from .utils import to_snake_case, clean_query_attribs
-from .custom_errors import NoQueryNameForGraphQLQueryWithNoArgs, NumberOfQueryAttributesDoNotMatch
+from .custom_errors import NoRootQueryNameForGraphQLQueryWithNoArgs, NumberOfQueryAttributesDoNotMatch
 
 
 def get_graphql_query_attribs(
@@ -207,3 +207,4 @@ async def get_graphql_request(info: GraphQLResolveInfo) -> str:
     raw_entire_request = await info.context['request'].json()
     graphql_request = raw_entire_request['query']
     return graphql_request
+

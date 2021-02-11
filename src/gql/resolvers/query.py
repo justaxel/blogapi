@@ -3,7 +3,7 @@ from uuid import UUID
 import sqlalchemy
 from ariadne import QueryType
 
-from ...database.crud import AccountDB, StoryDB
+from ...database.crud import AuthorDB, StoryDB
 from .query_helpers import (
     get_graphql_query_attribs,
     add_table_prefix_to_gql_query_items,
@@ -27,10 +27,11 @@ async def resolve_get_author(
     # get query fields from the raw graphql request and curate it
     gql_request = await get_graphql_request(info)
     query_fields = get_graphql_query_attribs(gql_request, has_args=True)
+    info.context['hello'] = 'im the root'
 
-    _db = AccountDB('author')
+    _db = AuthorDB()
     # get main query db table prefix and add it to every main query field requested
-    tbl_prefix = _db.attribute_prefix
+    tbl_prefix = _db.attrib_prefix
     q_fields_with_prefix = add_table_prefix_to_gql_query_items(query_fields, tbl_prefix)
 
     cols = [sqlalchemy.Column(field) for field in q_fields_with_prefix]
@@ -61,8 +62,9 @@ async def resolve_get_story(
 
     # get query fields from the raw graphql request and curate it
     request = await info.context['request'].json()
+    print(request)
     gql_request = request['query']
-    query_fields = get_graphql_query_attribs(gql_request, has_args=True)
+    query_fields = get_graphql_query_attribs(gql_request, has_args=True, )
     _db = StoryDB()
     tbl_prefix = _db.attribute_prefix
     q_fields_with_prefix = add_table_prefix_to_gql_query_items(query_fields, tbl_prefix)

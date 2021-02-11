@@ -20,6 +20,7 @@ async def resolve_profile_info(obj, info, *_):
 
     # get query fields from the raw graphql request and curate it
     gql_request = await get_graphql_request(info)
+    print(info)
     query_fields = get_graphql_query_attribs(
         gql_request, has_args=True, only_main_attribs=False, only_subquery_attribs=True, subquery_name='profile_info'
     )
