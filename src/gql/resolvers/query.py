@@ -26,8 +26,9 @@ async def resolve_get_author(
 
     # get query fields from the raw graphql request and curate it
     gql_request = await get_graphql_request(info)
+    reqe = await info.context['request'].json()
+    print(reqe)
     query_fields = get_graphql_query_attribs(gql_request, has_args=True)
-    info.context['hello'] = 'im the root'
 
     _db = AuthorDB()
     # get main query db table prefix and add it to every main query field requested
@@ -80,3 +81,9 @@ async def resolve_get_story(
     _story = remove_prefix_from_single_db_data(story, tbl_prefix)
     story = dict_keys_to_camel_case(_story)
     return story
+
+
+@query.field('getAllAuthors')
+async def resolve_get_all_authors(_, info):
+    jack = await info.context['request'].json()
+    print(jack)

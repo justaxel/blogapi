@@ -61,40 +61,51 @@ def remove_root_name_from_unarged_query(query) -> str:
     return query
 
 
-def get_subqueries(query):
+#def get_subqueries(query):
+#
+#    innermost_subq_pattern = re.compile(r'(\w*) ({(?:{??[^{]*?}))')
+#    try:
+#        get_innermost_subquery(query, innermost_subq_pattern)
+#
+#    return
 
-    subq_pattern = re.compile(r'(\w*) ({(?:{??[^{]*?}))')
-    pass
 
-
-def get_innermost_subquery(query, innermost_subq_pattern: Pattern):
+def get_innermost_subquery(
+        query: str,
+        pattern: Pattern,
+        subqs_found: list
+) -> typing.Optional[list]:
     """
 
     Args:
         query:
-        innermost_subq_pattern:
+        pattern:
+        subqs_found:
 
     Returns:
 
     """
 
-    # look for deepest subquery according to subq pattern
-    innermost_subq_lookup = innermost_subq_pattern.search(query)
-    try:
-        subq_found = innermost_subq_lookup.group()
-    except AttributeError:
-        raise AttributeError('No subquery found with current regular expression pattern.')
-    else:
-        # look for the name of found subquery
-        subq_name_lookup = re.search(r'(\w*) {\n', subq_found)
+    # look for deepest subqueries according to subq pattern
+    # tuple of the form ('name of subqs', 'raw attribs string')
+    for match in pattern.finditer(query):
+        subq = match.group(1, 2)
+        subq_string = match.group()
+        subqs_found.append(subq)
+        query = query.replace(subq_string, '')
+    if pattern.search(query):
+        get_innermost_subquery(query, pattern, subqs_found)
+    return subqs_found
 
-    # clean subquery name from braces and spaces
-    camel_subq_name = subq_name_lookup.group().replace('{', '').strip()
-    # get rid of subquery name and keep only dirty subquery attributes
-    dirty_subq_attribs = subq_found.replace(subq_name_lookup.group(), '')
-
-    # clean all resources
-    subq_name = to_snake_case(camel_subq_name)
-    subq_attribs = clean_query_attribs(dirty_subq_attribs)
-    return {subq_name: subq_attribs}
+#    if not subqs_found:
+#        return None
+#    else:
+#        subq_names = [to_snake_case(subqs[0]) for subqs in subqs_found]
+#        subq_attribs = [clean_query_attribs(subqs[1]) for subqs in subqs_found]
+#        innermost_subqs = {subq_name: subq_attribs for (subq_name, subq_attribs) in zip(subq_names, subq_attribs)}
+#        remaining_query = {'query': query}
+#
+#        #! it works but it needs recursion. query should not get out of this function
+#        # until there are no other subqueries
+#        return [innermost_subqs]
 
