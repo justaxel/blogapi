@@ -1,75 +1,107 @@
+"""
+
+"""
+
+
 import typing
 from uuid import UUID
 import sqlalchemy
 from ariadne import QueryType
+from graphql.type.definition import GraphQLResolveInfo
 
-from ...database.crud import AuthorDB, StoryDB
-from .query_helpers import (
-    get_graphql_query_attribs,
-    add_table_prefix_to_gql_query_items,
-    get_graphql_request,
-    remove_prefix_from_single_db_data,
+from ...database.crud import ArtistDB, StoryDB
+from .query_processor import get_graphql_request, GraphQLQueryProcessor
+
+from .utils import (
+    from_snake_dict_keys_to_camel_case_keys,
+    add_db_table_prefix_to_gql_query_fields,
+    remove_db_table_prefix_from_retrieved_db_data
 )
-from .utils import dict_keys_to_camel_case
 
 
 query = QueryType()
 
 
-@query.field('getAuthor')
-async def resolve_get_author(
+@query.field('getArtist')
+async def resolve_get_artist(
         _,
-        info,
+        info: GraphQLResolveInfo,
         username: str = None,
         email: str = None
 ) -> typing.Optional[typing.Mapping]:
+    """
 
-    # get query fields from the raw graphql request and curate it
-    gql_request = await get_graphql_request(info)
-    reqe = await info.context['request'].json()
-    print(reqe)
-    query_fields = get_graphql_query_attribs(gql_request, has_args=True)
+    Args:
+        _:
+        info:
+        username:
+        email:
 
-    _db = AuthorDB()
-    # get main query db table prefix and add it to every main query field requested
+    Returns:
+
+    """
+
+    # get gql request query, process it and obtain the fields
+    gql_request_query = await get_graphql_request(info)
+    gql_query_processor = GraphQLQueryProcessor(gql_request_query, query_has_args=True)
+    global_query_fields = gql_query_processor.retrieve_query_fields()
+    root_q_fields = global_query_fields.pop('root_query_fields')
+    # add subqueries to gql context dictionary so they can pass through
+    info.context.update(global_query_fields)
+
+    _db = ArtistDB()
     tbl_prefix = _db.attrib_prefix
-    q_fields_with_prefix = add_table_prefix_to_gql_query_items(query_fields, tbl_prefix)
 
-    cols = [sqlalchemy.Column(field) for field in q_fields_with_prefix]
+    # prepend the corresponding tbl prefix to every query field requested
+    # and turn it into an appropriate sqlalchemy column
+    query_fields = add_db_table_prefix_to_gql_query_fields(root_q_fields, tbl_prefix)
+    cols = [sqlalchemy.Column(field) for field in query_fields]
     where_clause = sqlalchemy.and_()
     if username:
         where_clause = sqlalchemy.and_(
-            _db.table.c.account_author_username == username, _db.table.c.account_author_status == 'active'
+            _db.table.c.account_artist_username == username, _db.table.c.account_author_status == 'active'
         )
     elif email:
         where_clause = sqlalchemy.and_(
-            _db.table.c.account_author_email == email, _db.table.c.account_author_status == 'active'
+            _db.table.c.account_artist_email == email, _db.table.c.account_author_status == 'active'
         )
 
-    author = await _db.fetch_one(cols, where_clause)
-    if author:
-        _author = remove_prefix_from_single_db_data(author, tbl_prefix)
-        author = dict_keys_to_camel_case(_author)
-    return author
+    artist = await _db.fetch_one(cols, where_clause)
+    if artist:
+        _artist = remove_db_table_prefix_from_retrieved_db_data(author, tbl_prefix)
+        artist = from_snake_dict_keys_to_camel_case_keys(_author)
+    return artist
 
 
 @query.field('getStory')
 async def resolve_get_story(
         _,
-        info,
+        info: GraphQLResolveInfo,
         _id: UUID = None,
         title: str = None
 ) -> typing.Optional[typing.Mapping]:
+    """
+
+    Args:
+        _:
+        info:
+        _id:
+        title:
+
+    Returns:
+
+    """
 
     # get query fields from the raw graphql request and curate it
-    request = await info.context['request'].json()
-    print(request)
-    gql_request = request['query']
-    query_fields = get_graphql_query_attribs(gql_request, has_args=True, )
+    gql_request_query = await get_graphql_request(info)
+    gql_query_processor = GraphQLQueryProcessor(gql_request_query, query_has_args=True)
+    global_query_fields = gql_query_processor.retrieve_query_fields()
+    root_q_fields = global_query_fields.pop('root_query_fields')
+    info.context.update(global_query_fields)
+
     _db = StoryDB()
-    tbl_prefix = _db.attribute_prefix
-    q_fields_with_prefix = add_table_prefix_to_gql_query_items(query_fields, tbl_prefix)
-    cols = [sqlalchemy.Column(field) for field in q_fields_with_prefix]
+    query_fields = add_db_table_prefix_to_gql_query_fields(root_q_fields, _db.attribute_prefix)
+    cols = [sqlalchemy.Column(field) for field in query_fields]
 
     where_clause = sqlalchemy.and_()
     if _id:
@@ -78,12 +110,70 @@ async def resolve_get_story(
         where_clause = sqlalchemy.and_(_db.table.c.story_title == title)
 
     story = await _db.fetch_one(cols, where_clause)
-    _story = remove_prefix_from_single_db_data(story, tbl_prefix)
-    story = dict_keys_to_camel_case(_story)
+    _story = remove_db_table_prefix_from_retrieved_db_data(story, _db.attribute_prefix)
+    story = from_snake_dict_keys_to_camel_case_keys(_story)
     return story
 
 
-@query.field('getAllAuthors')
-async def resolve_get_all_authors(_, info):
-    jack = await info.context['request'].json()
-    print(jack)
+@query.field('getAllArtists')
+async def resolve_get_all_artists(_, info: GraphQLResolveInfo) -> typing.Optional[typing.Mapping]:
+    """
+
+    Args:
+        _:
+        info:
+
+    Returns:
+
+    """
+
+    gql_request_query = await get_graphql_request(info)
+    gql_request_processor = GraphQLQueryProcessor(gql_request_query)
+    global_query_fields = gql_request_processor.retrieve_query_fields()
+    root_q_fields = global_query_fields.pop('root_query_fields')
+    info.context.update(global_query_fields)
+
+    _db = ArtistDB()
+    tbl_prefix = _db.attrib_prefix
+
+    query_fields = add_db_table_prefix_to_gql_query_fields(root_q_fields, tbl_prefix)
+    cols = [sqlalchemy.Column(field) for field in query_fields]
+    artists = await _db.fetch_all(cols)
+    _artists = remove_db_table_prefix_from_retrieved_db_data(artists, tbl_prefix)
+    artists = [from_snake_dict_keys_to_camel_case_keys(author) for author in _artists]
+    return artists
+
+
+@query.field('getAllStoriesByArtist')
+async def resolve_get_all_stories_by_artist(
+        _,
+        info: GraphQLResolveInfo,
+        _id: None
+) -> typing.Optional[typing.Mapping]:
+    """
+
+    Args:
+        _:
+        info:
+        _id:
+
+    Returns:
+
+    """
+
+    gql_request_query = await get_graphql_request(info)
+    gql_query_processor = GraphQLQueryProcessor(gql_request_query)
+    global_query_fields = gql_query_processor.retrieve_query_fields()
+    root_query_fields = global_query_fields.pop('root_query_fields')
+    info.context.update(global_query_fields)
+
+    _db = StoryDB()
+    tbl_prefix = _db.attribute_prefix
+
+    query_fields = add_db_table_prefix_to_gql_query_fields(root_query_fields, tbl_prefix)
+    cols = [sqlalchemy.Column(field) for field in query_fields]
+    where_clause_val = {'artist_id': _id}
+    stories = await _db.fetch_artist_stories(cols, where_clause_val)
+    _stories = remove_db_table_prefix_from_retrieved_db_data(stories, tbl_prefix)
+    stories = [from_snake_dict_keys_to_camel_case_keys(story) for story in _stories]
+    return stories

@@ -7,15 +7,15 @@ from .language import get_language_iso_code
 class Story:
 
     def __init__(
-        self,
-        author: str,
-        title: str,
-        language: str,
-        content: str = '',
-        synopsis: str = '',
-        is_published: bool = False,
-        is_test: bool = False,
-        uri: str = ''
+            self,
+            author: str,
+            title: str,
+            language: str,
+            content: str = '',
+            synopsis: str = '',
+            is_published: bool = False,
+            is_test: bool = False,
+            uri: str = ''
     ) -> None:
 
         self.author = author

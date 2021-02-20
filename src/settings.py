@@ -19,4 +19,4 @@ DB_HOST = getenv('DATABASE_HOST')
 DB_USER = getenv('DATABASE_USER')
 DB_PWRD = getenv('DATABASE_PWRD')
 
-DB_URL = f'postgresql://{DB_USER}:{DB_PWRD}@{DB_HOST}/{DB_NAME}'
+DB_URL = 'postgresql://{}:{}@{}/{}'.format(DB_USER, DB_PWRD, DB_HOST, DB_NAME)

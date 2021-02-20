@@ -1,7 +1,6 @@
 from typing import Dict
 from passlib.hash import argon2
-from ..database.crud import AccountDB
-from .status import set_status
+from ..database.crud import ArtistDB
 
 from ..utils.custom_errors import (
     EmptyPasswordNotAllowed,
@@ -9,32 +8,14 @@ from ..utils.custom_errors import (
 
 
 class Account:
-    """
-    A class to represent an account.
 
-    Attributes
-    ----------
-    `username`: str
-
-    `email`: str
-
-    `password`: str
-
-    `status`: str
-
-    Methods
-    -------
-    `set_status(status)`:
-        Assigns the status of an account.
-    
-    `hash_password():
-        Hashes the password of the account.
-    
-    `spew_data():
-        Returns account's data as a dictionary.
-    """
-
-    def __init__(self, username: str, email: str, password: str, status: str = 'not active') -> None:
+    def __init__(
+            self,
+            username: str,
+            email: str,
+            password: str,
+            status: str = 'not active'
+    ) -> None:
         """
         Constructs all the basic and necessary attributes for an account object.
         """
@@ -42,7 +23,7 @@ class Account:
         self.username = username
         self.email = email
         self.password = password
-        self.status = set_status(status)
+        self.status = self.set_status(status)
     
     def hash_password(self) -> str:
         """
@@ -71,17 +52,45 @@ class Account:
         }
         return account_data
 
-
-class Author(Account):
-    """
-    A class to represent an Author. It inherits the `Account` class.
-    """
-
-    def __init__(self, username: str, email: str, password: str, status: str = '', is_test: bool = False) -> None:
+    @staticmethod
+    def set_status(self, status: str) -> str:
         """
-        Constructs all the necessary attributes for the author object.
-        Binds the `AccountDB` class into the `_db` attribute.
+        Sets the current status of the account. The options are established by
+        ACCOUNTS_STATUS_OPTS constant:
+        `active`, `not active`, `upon deletion`, and `deleted`.
         """
+
+        account_status_opts = [
+            'active',
+            'not active',
+            'upon deletion',
+            'deleted',
+        ]
+        _status = status.lower()
+        if _status not in account_status_opts:
+            raise ValueError(
+                f'{status} is not a valid account status. '
+                'Please see the status module to find all available account status'
+            )
+        else:
+            status = _status
+        return status
+
+
+class Artist(Account):
+
+    def __init__(
+            self,
+            username: str,
+            email: str,
+            password: str,
+            status: str = '',
+            is_test: bool = False
+    ) -> None:
+
         super().__init__(username, email, password, status)
-        self.account_type = 'author'
-        self._db = AccountDB(self.account_type, is_test)
+        self._db = ArtistDB(is_test)
+
+    @property
+    def db(self):
+        return self._db

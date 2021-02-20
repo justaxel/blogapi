@@ -9,26 +9,7 @@ from ..utils.custom_errors import (
 )
 
 
-class AccountDataVerification():
-    """
-    A data checker for any class `Account` instance.
-
-    Attributes
-    ----------
-    `account_data`: Dict[str, str]
-        Data to be checked.
-
-    Methods
-    -------
-    `is_username_valid(username)`
-        Verifies if the username adheres to requirements.
-
-    `is_data_valid()`
-        Verifies if the `account_data` meets minimum requirements.
-
-    `is_hashed_str_valid(raw_password, hashed_str)`
-        Verifies if a given string matches another hashed string.
-    """
+class AccountDataVerification:
 
     def __init__(self, account_data: typing.Dict[str, str]):
         """Constructor for the class `AccountDataVerificator`."""
@@ -41,22 +22,23 @@ class AccountDataVerification():
         Returns True if and only if the  
         """
 
-        REQUIRED_DATA = ['username', 'email', 'password', 'password_confirm']
-        R_DATA_USERNAME = REQUIRED_DATA[0]
-        R_DATA_PASSWORD = REQUIRED_DATA[2]
-        R_DATA_PASSWORD_CONFIRM = REQUIRED_DATA[3]
+        required_data = ['username', 'email', 'password', 'password_confirm']
+        req_username = required_data[0]
+        req_email = required_data[1]
+        req_password = required_data[2]
+        req_password_confirm = required_data[3]
         data = self.account_data
 
         # check that every field in required data is in the query_data AND
         # check that every value of every field is not empty.
-        for field in REQUIRED_DATA:
+        for field in required_data:
             try:
                 data[field]
             except KeyError as err_key:
                 raise NoDataFound(
-                    f"It appears that {err_key} is missing. "
+                    "It appears that {err_key} is missing. "
                     "Please check that you have all required data. "
-                    f"Here is a hint: {', '.join(REQUIRED_DATA)}."
+                    f"Here is a hint: {', '.join(required_data)}."
                 )
             else:
                 # if the value for the field is empty raise error
@@ -66,18 +48,13 @@ class AccountDataVerification():
                         "Please check that all required data has a valid value"
                     )
         # check if username provided is valid
-        try:
-            self.is_username_valid(data[R_DATA_USERNAME])
-        except Exception:
-            return False
-        else:
-            try:
-                if self.do_passwords_match(data[R_DATA_PASSWORD], data[R_DATA_PASSWORD_CONFIRM]):
-                    return True
-            except PasswordsDoNotMatch:
-                return False
-            else:
-                return True
+        if (
+            self.is_username_valid(data[req_username]) and
+            self.do_passwords_match(
+                data[req_password], data[req_password_confirm]
+            )
+        ):
+            return True
 
     def is_username_valid(self, username: str) -> bool:
         """

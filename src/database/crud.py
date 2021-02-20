@@ -1,3 +1,8 @@
+"""
+
+"""
+
+
 import typing
 from databases import Database
 from sqlalchemy import Table, select, and_
@@ -5,21 +10,21 @@ from sqlalchemy.sql.elements import BooleanClauseList
 from sqlalchemy.sql.schema import Column
 from .main import MAIN_DB
 from .models import (
-    tbl_account_author,
+    tbl_account_artist,
     tbl_story,
-    tbl_author_story,
-    tbl_author_profile
+    tbl_artist_story,
+    tbl_artist_profile
 )
 
-from ..utils.custom_errors import (
-    TooManyWhereClauseAttributes,
-    WrongAccountType
-)
+
+DBColumnList = typing.List[Column]
+DBTableList = typing.List[Table]
 
 
 class MainDB:
 
     def __init__(self, is_test: bool = False, database: Database = None) -> None:
+
         self.is_test = is_test
         self.DB = self.get_database(database)
 
@@ -41,7 +46,7 @@ class MainDB:
 
     async def fetch_one(
             self,
-            cols: typing.Union[typing.List[Column], typing.List[Table]],
+            cols: typing.Union[DBColumnList, DBTableList],
             where_clause: BooleanClauseList
     ) -> typing.Optional[typing.Mapping]:
         """
@@ -64,53 +69,30 @@ class MainDB:
 
 
 class AccountDB(MainDB):
-    """
-    A class to read, create, update, and delete accounts.
-    Inherits :class:`MainDB` 
 
-    Attributes
-    ----------
-    `account_type` : str
-        The type of the account.
-    
-    Methods
-    -------
-    `get_table()`:
-        Gets and assings the correct account table for the `account_type` specified.
-        No need to call it, since this function it's called by the class
-        constructor.
+    def __init__(
+            self,
+            account_type: str,
+            is_test: bool = False,
+            database: Database = None
+    ) -> None:
 
-    `fetch_one()`:
-        Gets only one account according to the specified table attributes and values.
-    
-    `fetch_all()`:
-        Gets all accounts according to the specified table attributes.
-
-    `create_account()`:
-        Creates a new account.
-    """
-
-    def __init__(self, account_type: str, is_test: bool = False, database: Database = None) -> None:
         super().__init__(is_test, database)
         self.table = self.get_table(account_type)
 
     @staticmethod
     def get_table(account_type):
 
-        ACCOUNT_TABLES = {
-            'author': tbl_account_author,
+        account_tables = {
+            'artist': tbl_account_artist,
             # 'user': tbl_account_user
         }
-        try:
-            table = ACCOUNT_TABLES[account_type]
-        except KeyError:
-            raise KeyError
-        else:
-            return table
+        table = account_tables[account_type]
+        return table
 
     async def fetch_all(
             self,
-            cols: typing.Union[typing.List[Column], typing.List[Table]]
+            cols: typing.Union[DBColumnList, DBTableList]
     ) -> typing.List[typing.Mapping]:
         """
         Fetch all active accounts. It uses `cols` to be able to fetch only
@@ -123,11 +105,14 @@ class AccountDB(MainDB):
         """
 
         # ! Make a limit and offset query. Maybe use cursor for this
-        _query = select(cols).where(self.table.c.account_author_status == 'active')
+        _query = select(cols).where(self.table.c.account_artist_status == 'active')
         result = await self.DB.fetch_all(_query)
         return result
 
-    async def create_account(self, account_data: dict) -> typing.Optional[str]:
+    async def create_account(
+            self,
+            account_data: dict
+    ) -> typing.Optional[str]:
         """
         Create an account based on the specified `account_data` dictionary.
 
@@ -142,25 +127,18 @@ class AccountDB(MainDB):
         return result
 
 
-class AuthorDB(AccountDB):
+class ArtistDB(AccountDB):
 
     def __init__(self, is_test: bool = False) -> None:
-        super().__init__('author', is_test)
-        self.table = tbl_account_author
-        self.attrib_prefix = self.get_attrib_prefix()
 
-    def get_attrib_prefix(self) -> str:
-        """
+        super().__init__('artist', is_test)
+        self.table = tbl_account_artist
+        self.attrib_prefix = self.table.name
 
-        Returns:
-
-        """
-        attrib_prefix = self.table.name + '_'
-        return attrib_prefix
-
-    async def fetch_story_authors(
+    async def fetch_story_artist(
             self,
-            cols: typing.Union[typing.List[Column], typing.List[Table]], where_clause: typing.Dict[str, str]
+            cols: typing.Union[DBColumnList, DBTableList],
+            where_clause: typing.Dict[str, str]
     ) -> typing.Optional[typing.List]:
         """
 
@@ -173,8 +151,8 @@ class AuthorDB(AccountDB):
         """
 
         join_q = self.table.\
-            join(tbl_author_story,
-                 self.table.c.account_author_id == tbl_author_story.c.author_id_fk
+            join(tbl_artist_story,
+                 self.table.c.account_artist_id == tbl_artist_story.c.artist_id_fk
                  ).\
             join(tbl_story,
                  tbl_story.c.story_id == where_clause['story_id']
@@ -185,19 +163,11 @@ class AuthorDB(AccountDB):
         return result
 
 
-class AccountProfileInformationDB(MainDB):
-
+class ArtistProfileInformationDB(MainDB):
     def __init__(self, is_test: bool = False, database: Database = None) -> None:
         super().__init__(is_test, database)
-        self.table = tbl_author_profile
-        self.attribute_prefix = self.get_attrib_prefix()
-
-    @staticmethod
-    def get_attrib_prefix() -> str:
-        """Gets the database table attributes' predix."""
-
-        attrib_prefix = 'author_'
-        return attrib_prefix
+        self.table = tbl_artist_profile
+        self.attribute_prefix = 'artist'
 
 
 class StoryDB(MainDB):
@@ -205,41 +175,32 @@ class StoryDB(MainDB):
     def __init__(self, is_test: bool = False) -> None:
         super().__init__(is_test)
         self.table = tbl_story
-        self.attribute_prefix = self.get_attrib_prefix()
+        self.attribute_prefix = self.table.name
 
-    def get_attrib_prefix(self) -> str:
-        """Gets the database table attributes' prefix."""
-
-        attrib_prefix = self.table.name + '_'
-        return attrib_prefix
-
-    async def fetch_author_stories(
+    async def fetch_artist_stories(
             self,
-            cols: typing.Union[typing.List[Column], typing.List[Table]],
-            where_clause: typing.Dict[str, str]
+            cols: typing.Union[DBColumnList, DBTableList],
+            where_clause_val: typing.Dict[str, str]
     ) -> typing.Optional[typing.List]:
         """
         """
 
-        if len(where_clause.keys()) > 1:
-            raise TooManyWhereClauseAttributes
-
         join_q = self.table.\
-            join(tbl_author_story,
-                 self.table.c.story_id == tbl_author_story.c.story_id_fk
+            join(tbl_artist_story,
+                 self.table.c.story_id == tbl_artist_story.c.story_id_fk
                  ).\
-            join(tbl_account_author,
-                 and_(tbl_account_author.c.account_author_id == where_clause['author_id'],
-                      tbl_account_author.c.account_author_status == 'active'
-                      )
+            join(tbl_account_artist,
+                 tbl_artist_story.c.artist_id_fk == tbl_account_artist.c.account_artist_id
                  )
-        _query = select(cols).select_from(join_q)
+        where_clause = and_(
+            tbl_account_artist.c.account_artist_id == where_clause_val['artist_id'],
+            tbl_account_artist.c.account_artist_status == 'active'
+        )
+        _query = select(cols).select_from(join_q).where(where_clause)
         result = await self.DB.fetch_all(_query)
         return result
 
     async def create_story(self, story_data: dict) -> typing.Optional[str]:
-        """
-        """
 
         insert_q = self.table.insert().values(story_data)
         result = await self.DB.execute(insert_q)

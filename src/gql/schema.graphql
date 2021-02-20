@@ -1,21 +1,21 @@
 type Query {
-    getAuthor(username: String, email: String): Author
-    getAllAuthors: [Author!]!
-    getStory(_id: ID, title: String): Story  # since 'id' is a built-in function in python. '_id' is used.
-    getAllStoriesByAuthor(username: String!): [Story!]!
+    getArtist(username: String, email: String): Artist
+    getAllArtists: [Artist!]!
+    getStory(_id: ID): Story  # since 'id' is a built-in function in python. '_id' is used.
+    getAllStoriesByArtist(_id: ID!): [Story]
 }
 
 type Mutation {
-    newAuthor(username: String!, email: String!, password: String!, passwordConfirm: String!): NewAuthorPayload
+    newArtist(username: String!, email: String!, password: String!, passwordConfirm: String!): NewArtistPayload
 }
 
-type Author {
+type Artist {
     id: ID!
     username: String!
     email: String!
     dateCreated: String!
-    profileInfo: AuthorProfile!
-    stories: [Story!]!
+    profileInfo: ArtistProfile
+    stories: [Story]
 }
 
 type Story {
@@ -25,22 +25,22 @@ type Story {
     synopsis: String
     language: String!
     isPublished: Boolean!
-    authors: [Author!]!
+    artists: [Artist!]!
 }
 
-type AuthorProfile {
+type ArtistProfile {
     nameFirst: String
     nameLast: String
     bioDescript: String
     location: String
 }
 
-type NewAuthorPayload {
-    "The success status of the Author's account creation. Returns `true` if all went well. It returns `false` otherwise."
+type NewArtistPayload {
+    "The success status of the Artist's account creation. Returns `true` if all went well. It returns `false` otherwise."
     status: Boolean!
-    "The error ocurred in case something happens when trying to create a new Author."
+    "The error ocurred in case something happens when trying to create a new Artist."
     error: String
-    "The Author's ID. It's returned if and only if the account was successfully created."
+    "The Artist's ID. It's returned if and only if the account was successfully created."
     authorID: String
 }
 

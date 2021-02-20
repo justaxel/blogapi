@@ -1,13 +1,15 @@
-from fastapi import FastAPI, Request
+"""
+
+"""
+
+
+from fastapi import FastAPI
 from ariadne.asgi import GraphQL
-from sqlalchemy.sql.schema import Column
 from .gql.type_def import schema
 
 from .settings import DB_NAME
 from .database.main import MAIN_DB
 
-from .database.crud import AuthorDB
-from .database.models import tbl_story
 
 blogAPI = FastAPI(debug=True)
 
@@ -31,7 +33,6 @@ async def startup():
         print('SUCCESS: Database connected.')
         print(f'You are now connected to {DB_NAME}')
         print(SEPARATOR)
-
 
 
 @blogAPI.on_event('shutdown')

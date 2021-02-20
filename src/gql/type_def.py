@@ -7,9 +7,9 @@ from ariadne import (
 
 from .resolvers.query import query
 from .resolvers.mutation import (
-    resolve_new_author,
+    resolve_new_artist,
 )
-from .resolvers.author import author
+from .resolvers.artist import artist
 from .resolvers.story import story
 
 
@@ -19,15 +19,15 @@ type_defs = load_schema_from_path(f'{gql_path}schema.graphql')
 mutation = MutationType()
 
 
-author_profile = ObjectType('AuthorProfile')
+artist_profile = ObjectType('ArtistProfile')
 
 
-new_author_payload = ObjectType('NewAuthorPayload')
+new_artist_payload = ObjectType('NewArtistPayload')
 new_story_payload = ObjectType('NewStoryPayload')
 
-mutation.set_field('newAuthor', resolve_new_author)
+mutation.set_field('newArtist', resolve_new_artist)
 
 schema = make_executable_schema(
     type_defs,
-    query, mutation, author, story 
+    query, mutation, artist, story
 )

@@ -2,14 +2,11 @@ from ariadne import ObjectType
 import sqlalchemy
 
 from ...database.crud import AuthorDB
-from .query_helpers import (
-    get_graphql_request,
-    get_graphql_query_attribs,
-    remove_prefix_from_single_db_data,
-    remove_prefix_from_multiple_db_data,
-    add_table_prefix_to_gql_query_items,
+from .utils import (
+    from_snake_dict_keys_to_camel_case_keys,
+    add_db_table_prefix_to_gql_query_fields,
+    remove_db_table_prefix_from_retrieved_db_data
 )
-from ..resolvers.utils import dict_keys_to_camel_case
 
 
 story = ObjectType('Story')
@@ -17,18 +14,25 @@ story = ObjectType('Story')
 
 @story.field('authors')
 async def resolve_authors(obj, info, *_):
+    """
 
-    gql_request = await get_graphql_request(info)
-    query_fields = get_graphql_query_attribs(
-        gql_request, has_args=True, only_main_attribs=False, only_subquery_attribs=True, subquery_name='authors'
-    )
+    Args:
+        obj:
+        info:
+        *_:
+
+    Returns:
+
+    """
+
+    authors_fields = info.context['subqueries']['authors']
+
     _db = AuthorDB()
-    tbl_prefix = _db.attrib_prefix
-    q_fields_with_prefix = add_table_prefix_to_gql_query_items(query_fields, tbl_prefix)
+    q_fields_with_prefix = add_db_table_prefix_to_gql_query_fields(authors_fields, _db.attrib_prefix)
     cols = [sqlalchemy.Column(field) for field in q_fields_with_prefix]
     story_id = obj['id']
     where_clause = {'story_id': story_id}
     story_author = await _db.fetch_story_authors(cols, where_clause)
-    _author = remove_prefix_from_multiple_db_data(story_author, tbl_prefix)
-    authors = [dict_keys_to_camel_case(author) for author in _author]
+    _author = remove_db_table_prefix_from_retrieved_db_data(story_author, _db.attrib_prefix)
+    authors = [from_snake_dict_keys_to_camel_case_keys(author) for author in _author]
     return authors

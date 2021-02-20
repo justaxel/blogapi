@@ -22,7 +22,7 @@ class AccountProfile:
             self.location = location
 
 
-class AuthorProfile(AccountProfile):
+class ArtistProfile(AccountProfile):
 
     def __init__(
         self,
@@ -40,3 +40,7 @@ class AuthorProfile(AccountProfile):
             bio_descript=bio_descript,
             location=location
         )
+
+
+class UserProfile(AccountProfile):
+    pass
