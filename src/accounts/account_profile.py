@@ -4,14 +4,12 @@ class AccountProfile:
 
     def __init__(
         self,
-        username: str,
         name_first: str = None,
         name_last: str = None,
         bio_descript: str = None,
         location: str = None
     ) -> None:
         
-        self.username = username
         if name_first:
             self.name_first = name_first
         if name_last:
@@ -26,15 +24,15 @@ class ArtistProfile(AccountProfile):
 
     def __init__(
         self,
-        username: str,
         name_first: str = None,
         name_last: str = None,
         bio_descript: str = None,
-        location: str = None
+        location: str = None,
+        website: str = None,
+        twitter_username: str = None
     ) -> None:
 
         super().__init__(
-            username=username,
             name_first=name_first,
             name_last=name_last,
             bio_descript=bio_descript,

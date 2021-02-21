@@ -1,11 +1,12 @@
 """GraphQL query processor.
 
-This module exports the class GraphQLQueryProcessor and the necessary function
-get_graphql_request(). The latter's job is to retrieve a GraphQL query requested
-by a HTTP client, by using the attribute :info: found whithin each GraphQL resolver
-function. The former's task is to use this GraphQL query to find which fields are
-requested by using regular expression lookup. This way, no unnecessary database
-fetching should be performed.
+This module exports the class GraphQLQueryProcessor and the necessary
+function get_graphql_request(). The latter's job is to retrieve a
+GraphQL query requested by a HTTP client, by using the attribute :info:
+found whithin each GraphQL resolver function. The former's task is to
+use this GraphQL query to find which fields are requested by using regular
+expression lookup. This way, no unnecessary database fetching should be
+performed.
 
     Usage example:
 
@@ -13,13 +14,13 @@ fetching should be performed.
     graphql_request = get_graphql_request(info)
 
     # process the entire graphql query
-    my_query_processor = GraphQLQueryProcessor(graphql_request, query_has_args=True)
+    my_query_processor = GraphQLQueryProcessor(
+        graphql_request, query_has_args=True
+    )
     query_fields_found = my_query_processor.retrieve_graphql_query_fields()
 
     # do something to the graphql query fields
     ...
-
-
 """
 
 
@@ -45,7 +46,9 @@ class GraphQLQueryProcessor:
     def __init__(self, graphql_query, query_has_args: bool = False) -> None:
         self.query = graphql_query
         self.query_has_args = query_has_args
-        self.re_innermost_subquery_pattern = re.compile(r'(\w*) ({(?:{??[^{]*?}))')
+        self.re_innermost_subquery_pattern = re.compile(
+            r'(\w*) ({(?:{??[^{]*?}))'
+        )
 
     def retrieve_query_fields(self) -> dict:
         """
@@ -56,8 +59,8 @@ class GraphQLQueryProcessor:
 
         query = self.query
         if self.query_has_args:
-            # in case the query has arguments, there is no need to manually remove
-            # the root query name.
+            # in case the query has arguments, there is no need to
+            # manually remove the root query name.
             root_query_name_lookup = re.search(r'(\w*)\"\) {\n', query)
         else:
             query = self.remove_root_name_from_unarged_query(query)
@@ -79,14 +82,21 @@ class GraphQLQueryProcessor:
 
         """
 
-        root_query_type_lookup = re.search(r'query (\w*) {\n', query, re.IGNORECASE)
+        root_query_type_lookup = re.search(
+            r'query (\w*) {\n', query, re.IGNORECASE
+        )
         if not root_query_type_lookup:
-            root_query_type_lookup = re.search(r'query {\n', query, re.IGNORECASE)
+            root_query_type_lookup = re.search(
+                r'query {\n', query, re.IGNORECASE
+            )
         query = query[root_query_type_lookup.span()[1]:]
         return query
 
     def get_graphql_query_fields(self, query) -> dict:
         """
+
+        Args:
+            query:
 
         Returns:
 
@@ -95,17 +105,30 @@ class GraphQLQueryProcessor:
         query_data = self.get_graphql_query_data(query)
         subqueries_found = query_data[0]
         root_query_fields = query_data[1]
-        subq_names = [from_camel_to_snake_case(subquery_name[0]) for subquery_name in subqueries_found]
-        subq_fields = [clean_graphql_query_fields(subquery_fields[1]) for subquery_fields in subqueries_found]
+        subq_names = [
+            from_camel_to_snake_case(subquery_name[0])
+            for subquery_name in subqueries_found
+        ]
+        subq_fields = [
+            clean_graphql_query_fields(subquery_fields[1])
+            for subquery_fields in subqueries_found
+        ]
         subqueries = {
             'subqueries': {
-                subq_name: subq_fields for (subq_name, subq_fields) in zip(subq_names, subq_fields)
+                subq_name:
+                    subq_fields
+                    for (subq_name, subq_fields) in zip(subq_names, subq_fields)
             }
         }
-        root_query_fields = {'root_query_fields': clean_graphql_query_fields(root_query_fields)}
+        root_query_fields = {
+            'root_query_fields': clean_graphql_query_fields(root_query_fields)
+        }
         return {**root_query_fields, **subqueries}
 
-    def get_graphql_query_data(self, query: str) -> typing.Optional[typing.Tuple[list, str]]:
+    def get_graphql_query_data(
+            self,
+            query: str
+    ) -> typing.Optional[typing.Tuple[list, str]]:
         """
 
         Args:

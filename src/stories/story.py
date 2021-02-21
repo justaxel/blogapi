@@ -8,7 +8,7 @@ class Story:
 
     def __init__(
             self,
-            author: str,
+            authors: str,
             title: str,
             language: str,
             content: str = '',
@@ -18,13 +18,10 @@ class Story:
             uri: str = ''
     ) -> None:
 
-        self.author = author
-        if title:
-            self.title = title.encode('utf-8')
-        if content:
-            self.content = content.encode('utf-8')
-        if synopsis:
-            self.synopsis = synopsis.encode('utf-8')
+        self.authors = authors
+        self.title = title.encode('utf-8')
+        self.content = content.encode('utf-8')
+        self.synopsis = synopsis.encode('utf-8')
         self.language_info = get_language_iso_code(language)
         self.is_published = is_published
         self.uri = uri
@@ -51,6 +48,7 @@ class Story:
     def spew_out_data(self):
         
         story_data = {
+            'authors': self.authors,
             'title': self.title,
             'content': self.content,
             'synopsis': self.synopsis,

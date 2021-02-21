@@ -1,7 +1,10 @@
 from typing import Dict
 from passlib.hash import argon2
-from ..database.crud import ArtistDB
 
+from ..database.crud import (
+    ArtistDB,
+    UserDB
+)
 from ..utils.custom_errors import (
     EmptyPasswordNotAllowed,
 )
@@ -94,3 +97,18 @@ class Artist(Account):
     @property
     def db(self):
         return self._db
+
+
+class User(Account):
+
+    def __init__(
+            self,
+            username: str,
+            email: str,
+            password: str,
+            status: str = '',
+            is_test: bool = False
+    ) -> None:
+
+        super().__init__(username, email, password, status)
+        self._db = UserDB(is_test)

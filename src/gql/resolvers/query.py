@@ -68,8 +68,8 @@ async def resolve_get_artist(
 
     artist = await _db.fetch_one(cols, where_clause)
     if artist:
-        _artist = remove_db_table_prefix_from_retrieved_db_data(author, tbl_prefix)
-        artist = from_snake_dict_keys_to_camel_case_keys(_author)
+        _artist = remove_db_table_prefix_from_retrieved_db_data(artist, tbl_prefix)
+        artist = from_snake_dict_keys_to_camel_case_keys(_artist)
     return artist
 
 
